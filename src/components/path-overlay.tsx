@@ -195,7 +195,7 @@ export default function DrawPaths({ poses, paths,updatePose }: PathDrawProps) {
 
       //paths drawing using bspline class
       paths.forEach((path) => {
-        const spline = new bsplineClass(path, localPoses);
+        const spline = new bsplineClass(path, localPoses,updatePose);
 
         const points: Vector[] = [];
         const numPoints = path.controlPoints.length *200; 
