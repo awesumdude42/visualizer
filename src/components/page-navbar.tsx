@@ -19,7 +19,7 @@ export default function PageNavbar() {
 
     [{
     name: "Visualizer 1",
-    id: Date.now(),
+    id: 1,
     only:true,
     }]
   )
