@@ -5,7 +5,7 @@ import PathControls from "@/components/path-controls";
 import { Paths, Poses, ReRender, Settings } from "@/hooks/use-visualizer";
 import PoseControls from "@/components/pose-controls";
 import DrawPaths from "@/components/path-overlay";
-import { Dispatch, SetStateAction, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 
 
 export default function Home() {
@@ -50,9 +50,17 @@ export default function Home() {
     reRenderCanvas,
     setReRenderCanvas
   } = ReRender();
-  
-  const [currentShapeIndex,setCurrentShapeIndex] = useState(0);
+
   const [currentPathIndex,setCurrentPathIndex] = useState(0);
+
+  const [currentShape, setCurrentShape] = useState<Shape>({
+    id:0,
+    coords:{x:0,y:0},
+    color:"",
+    type:"none"
+  })
+
+  
  
   
 
@@ -73,8 +81,8 @@ export default function Home() {
               addPose={addPose}
               updatePose={updatePose}
               setPoses={setPoses}
-              currentShapeIndex={currentShapeIndex}
-              setCurrentShapeIndex = {setCurrentShapeIndex}
+              currentShape={currentShape}
+              setCurrentShape={setCurrentShape}
             />
           </span>
         </ResizablePanel>
@@ -85,8 +93,6 @@ export default function Home() {
           paths={paths}
           updatePose={updatePose} 
           reRender = {reRenderCanvas} 
-          currentShapeIndex={currentShapeIndex}
-          setCurrentShapeIndex={setCurrentShapeIndex}
           currentPathIndex={currentPathIndex}
           setCurrentPathIndex={setCurrentPathIndex}
           deletePose={deletePose}
@@ -95,6 +101,8 @@ export default function Home() {
           updatePath={updatePath}
           updateFirstPose={updateFirstPose}
           updateEndPose={updateEndPose}
+          setCurrentShape={setCurrentShape}
+          currentShape={currentShape}
           />
         </ResizablePanel>
         <ResizableHandle withHandle />
@@ -134,9 +142,6 @@ export default function Home() {
         </ResizablePanel>
       </ResizablePanelGroup>
 
-      {/* <div className="rounded-lg border-border mt-4 flex w-full h-8 border items-center justify-between px-6">
-        HI
-      </div> */}
     </div>
   );
 }

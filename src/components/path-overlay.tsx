@@ -11,8 +11,6 @@ interface PathDrawProps {
   paths: Path[];
   updatePose: (id: number, updatedFields: Partial<Pose>) => void;
   reRender: boolean 
-  currentShapeIndex:number
-  setCurrentShapeIndex: Dispatch<SetStateAction<number>>
   currentPathIndex:number
   setCurrentPathIndex: Dispatch<SetStateAction<number>>
   deletePose: (id: number) => void
@@ -21,6 +19,8 @@ interface PathDrawProps {
   updatePath: (id: number, updatedFields: Partial<Path>) => void
   updateFirstPose: (pathId: number, updatedFields: Partial<NativeControlPoint>) => void
   updateEndPose: (pathId: number, updatedFields: Partial<NativeControlPoint>) => void
+  currentShape: Shape
+  setCurrentShape: Dispatch<SetStateAction<Shape>>
 }
 
 export default function DrawPaths({
@@ -28,15 +28,14 @@ export default function DrawPaths({
   paths,
   updatePose,
   reRender,
-  currentShapeIndex,
-  setCurrentShapeIndex,
-  currentPathIndex,
   setCurrentPathIndex,
   updateControlPoint,
   updateNativePoint,
   updatePath,
   updateFirstPose,
-  updateEndPose
+  updateEndPose,
+  currentShape,
+  setCurrentShape
 }: PathDrawProps) {
 
 
@@ -53,21 +52,13 @@ export default function DrawPaths({
 
   
   const [imageLoaded, setImageLoaded] = useState(false);
-  const currentShapeIndexRef = useRef(currentShapeIndex);
-  const currentPathIndexRef = useRef(currentPathIndex);
-  const isDraggingNativeRef = useRef(false);
-  const isDraggingPoseRef = useRef(false);
-  const pathsRef = useRef(paths);
-  pathsRef.current = paths;
+
+  
 
 
-  useEffect(() => {
-    currentShapeIndexRef.current = currentShapeIndex;
-    currentPathIndexRef.current = currentPathIndex;
-    
-  }, [currentShapeIndex,currentPathIndex]);
+ 
 
-  const shapes:poseShape[] = []
+  
   let startX:number;
   let startY:number;
 
@@ -76,7 +67,21 @@ export default function DrawPaths({
   let scaleX:number;
   let scaleY:number;
 
-  const currentNativeIdRef = useRef<number>(0); 
+
+  
+  const currentShapeRef = useRef<Shape>(currentShape)
+  let isDraggingShapeRef = useRef<boolean>(false);
+
+
+  
+
+  function toPx(p:Vector){
+    return { x: centerX + p.x * scaleX, y: centerY - p.y * scaleY }
+  }
+
+
+  
+
   
 
   
@@ -84,46 +89,81 @@ export default function DrawPaths({
 
   useEffect(() => {
 
-  
+    
+    const shapes:Shape[] = []
 
-    let natives:ControlPoint[] = []
-      
-    pathsRef.current.forEach((path)=>{
-      natives.push(path.firstPose)
-      path.controlPoints.forEach((CP)=>{
-        if(CP.isNative) natives.push(CP)
+    //add poses
+    poses.forEach((pose)=>{
+      shapes.push({
+        id:pose.id,
+        type:"pose",
+        coords:{
+          x:pose.x ?? 0,
+          y:pose.y ?? 0
+        },
+        color: pose.color
       })
-      natives.push(path.endPose)
     })
+
     const localPoses = poses.map(pose => ({ ...pose }));
 
+    const localPaths = paths.map(path => ({ ...path }));
+
+    //add native control points
+    localPaths.forEach((path)=>{
+
+      //first
+      shapes.push({
+        id:path.firstPose.id,
+        type:"native",
+        coords:path.firstPose.nativeParameter?.coord ?? {x:0,y:0},
+        color: path.color
+      })
+      //addable/subtractable
+      path.controlPoints.forEach((CP)=>{
+        if(CP.isNative && CP.nativeParameter)
+          shapes.push({
+            id:CP.id,
+            type:"native",
+            coords:CP.nativeParameter.coord,
+            color: path.color
+          })
+      })
+      //end
+      shapes.push({
+        id:path.endPose.id,
+        type:"native",
+        coords:path.endPose.nativeParameter?.coord ?? {x:0,y:0},
+        color: path.color
+      })
+    })
+
+  
+      
     
+    
+
+
+    
+    
+
 
     //drag and drop checker
-    let is_mouse_in_pose = (x:number,y:number,pose:poseShape)=>{
+    let is_mouse_in_shape = (x:number, y:number,shape:Shape) =>{ //TODO make sure this handles arcposes correctly
+      let tolerance = 10;
+      if(shape.type == "native") tolerance = 12;
 
-      const tolerance = 10;
+      const s = toPx(shape.coords)
+      let squaredDist = (x - s.x)**2 + (y - s.y)**2
 
-      let squaredDist = (x - pose.x)**2 + (y - pose.y)**2
-    
-    
-    return squaredDist <= pose.radius**2 + tolerance**2
 
-    }
-
-    let is_mouse_in_vector = (x:number,y:number,vector:Vector)=>{
-
-      const tolerance = 12;
-
-      let squaredDist = (x - vector.x)**2 + (y - vector.y)**2
-    
-    
-    return squaredDist <= 8**2 + tolerance**2
-
+      if(shape.type == "pose")return squaredDist <= 7**2 + tolerance**2
+      else return squaredDist <= 8**2 + tolerance**2
     }
 
 
 
+  
     let is_mouse_in_path = (x:number,y:number,spline:bsplineClass,path:Path)=>{
       const numPoints = (path.controlPoints.length + 2)* 200;
 
@@ -148,178 +188,173 @@ export default function DrawPaths({
       startX = event.clientX - rect.left;
       startY = event.clientY - rect.top;
 
-    
-      
-      for (let i = 0; i < natives.length; i++) {
-        const c = natives[i].nativeParameter?.coord;
-        if (!c) continue;
-        const px = centerX + c.x * scaleX;
-        const py = centerY - c.y * scaleY;
-        if (is_mouse_in_vector(startX, startY, { x: px, y: py })) {
-          currentNativeIdRef.current = natives[i].id;
-          isDraggingNativeRef.current = true;
-          return;
-        } 
-      }
-    
-      
-      for (let i = 0; i < shapes.length; i++) {
-        if (is_mouse_in_pose(startX, startY, shapes[i])) {
-          isDraggingPoseRef.current = true;
-          setCurrentShapeIndex(i);
+      let reached = false;
+
+      for (const shape of shapes) {
+        if (is_mouse_in_shape(startX, startY, shape)) {
+          currentShapeRef.current = shape;                              
+          setCurrentShape({ ...shape, coords: { ...shape.coords } });  
+          isDraggingShapeRef.current = true;
+          reached = true;
+          draw();
           break;
         }
       }
-    
-      
 
-      pathsRef.current.forEach((path, i) => {
+      if (!reached) {
+        const none: Shape = { id: 0, coords: { x: 0, y: 0 }, color: "", type: "none" };
+        currentShapeRef.current = none;
+        setCurrentShape(none);
+        draw();
+      }
+      
+      localPaths.forEach((path, i) => {
         if (is_mouse_in_path(startX, startY, new bsplineClass(path, localPoses), path)) {
           setCurrentPathIndex(i);
+          reached = true;
         }
       });
     };
 
     let mouse_up = (event: MouseEvent) => {
-      if(isDraggingPoseRef.current ){
-        event.preventDefault();
-      
-        let current_shape = shapes[currentShapeIndexRef.current]
-        
-        const id = current_shape.poseId;
-        updatePose(id,{
-          x:Number(((current_shape.x - centerX) / scaleX).toFixed(3)),
-          y:Number(((centerY - current_shape.y) / scaleY).toFixed(3)),
-        open:""
-        })
-        if(ctx)
-        ctx.globalAlpha = 1;
-      
-        
-        isDraggingPoseRef.current = false;
-        
-      
-      
-      }else if(isDraggingNativeRef.current) {
-        const currentNative = natives.find((CP)=>CP.id == currentNativeIdRef.current)
-        
-        pathsRef.current.forEach((path)=>{
-          path.controlPoints.forEach((CP)=>{
-            if(CP.id == currentNative?.id){
-              updateNativePoint(path.id,CP.id,{coord:{
-                x:Number(currentNative.nativeParameter?.coord.x.toFixed(3)) ?? 0,
-                y:Number(currentNative.nativeParameter?.coord.y.toFixed(3)) ?? 0}})
+      if(isDraggingShapeRef.current){
+        shapes.forEach((shape)=>{
+          //path stuff
+          if(shape.type == "native"){
+            
+            localPaths.forEach((path,index)=>{
+              path.controlPoints.forEach((CP)=>{
+                if(CP.id == shape.id){
+                  updateNativePoint(path.id,CP.id,{coord:{
+                    x:Number(shape.coords.x.toFixed(3)),
+                    y:Number(shape.coords.y.toFixed(3))}})
+                  }
+                if(shape.id == CP.id) setCurrentPathIndex(index)
+              })
+              if(path.firstPose.id == shape.id){
+                updateFirstPose(path.id,{coord:{
+                  x:Number(shape.coords.x.toFixed(3)),
+                  y:Number(shape.coords.y.toFixed(3))}})
+                if(shape.id == path.firstPose.id) setCurrentPathIndex(index)
               }
-          })
-          if(path.firstPose.id == currentNative?.id){
-            updateFirstPose(path.id,{coord:{
-              x:Number(currentNative.nativeParameter?.coord.x.toFixed(3)) ?? 0,
-              y:Number(currentNative.nativeParameter?.coord.y.toFixed(3)) ?? 0}})
-          }
-          if(path.endPose.id == currentNative?.id){
-            updateEndPose(path.id,{coord:{
-              x:Number(currentNative.nativeParameter?.coord.x.toFixed(3)) ?? 0,
-              y:Number(currentNative.nativeParameter?.coord.y.toFixed(3)) ?? 0}})
+              if(path.endPose.id == shape.id){
+                updateEndPose(path.id,{coord:{
+                  x:Number(shape.coords.x.toFixed(3)),
+                  y:Number(shape.coords.y.toFixed(3))}})
+                  if(shape.id == path.endPose.id) setCurrentPathIndex(index)
+              }
+            })
+            //pose stuff
+          }else if(shape.type == "pose"){
+            updatePose(shape.id,{
+              x:Number(shape.coords.x.toFixed(3)),
+              y:Number(shape.coords.y.toFixed(3))
+            })
           }
         })
-        isDraggingNativeRef.current = false;
-      }
-      else{
-        return
+
+        isDraggingShapeRef.current = false;
       }
     };
 
 
     let mouse_out = (event: MouseEvent) => {
-      if(!isDraggingPoseRef.current && !isDraggingNativeRef.current){
-        return;
-      }
-      event.preventDefault();
-
-      let current_shape = shapes[currentShapeIndexRef.current]
-      if(current_shape){
-        const id = current_shape.poseId;
-        updatePose(id,{
-          x:Number(((current_shape.x - centerX) / scaleX).toFixed(3)),
-          y:Number(((centerY - current_shape.y) / scaleY).toFixed(3))
-        })
-      }
-
-      const currentNative = natives.find((CP)=>CP.id == currentNativeIdRef.current)
-      if(currentNative)  {
-        pathsRef.current.forEach((path)=>{
-          path.controlPoints.forEach((CP)=>{
-            if(CP.id == currentNative.id){
-              updateNativePoint(path.id,CP.id,{coord:{
-                x:Number(currentNative.nativeParameter?.coord.x.toFixed(3)) ?? 0,
-                y:Number(currentNative.nativeParameter?.coord.y.toFixed(3)) ?? 0}})
+    
+      if(isDraggingShapeRef.current){
+        shapes.forEach((shape)=>{
+          //path stuff
+          if(shape.type == "native"){
+            localPaths.forEach((path)=>{
+              path.controlPoints.forEach((CP)=>{
+                if(CP.id == shape.id){
+                  updateNativePoint(path.id,CP.id,{coord:{
+                    x:Number(shape.coords.x.toFixed(3)),
+                    y:Number(shape.coords.y.toFixed(3))}})
+                  }
+              })
+              if(path.firstPose.id == shape.id){
+                updateFirstPose(path.id,{coord:{
+                  x:Number(shape.coords.x.toFixed(3)),
+                  y:Number(shape.coords.y.toFixed(3))}})
               }
-          })
-          if(path.firstPose.id == currentNative.id){
-            updateFirstPose(path.id,{coord:{
-              x:Number(currentNative.nativeParameter?.coord.x.toFixed(3)) ?? 0,
-              y:Number(currentNative.nativeParameter?.coord.y.toFixed(3)) ?? 0}})
-          }
-          if(path.endPose.id == currentNative.id){
-            updateEndPose(path.id,{coord:{
-              x:Number(currentNative.nativeParameter?.coord.x.toFixed(3)) ?? 0,
-              y:Number(currentNative.nativeParameter?.coord.y.toFixed(3)) ?? 0}})
+              if(path.endPose.id == shape.id){
+                updateEndPose(path.id,{coord:{
+                  x:Number(shape.coords.x.toFixed(3)),
+                  y:Number(shape.coords.y.toFixed(3))}})
+              }
+            })
+            //pose stuff
+          }else if(shape.type == "pose"){
+            updatePose(shape.id,{
+              x:Number(shape.coords.x.toFixed(3)),
+              y:Number(shape.coords.y.toFixed(3))
+            })
           }
         })
       }
+      
 
-      isDraggingPoseRef.current = false;
-      isDraggingNativeRef.current = false;
+      isDraggingShapeRef.current = false;
+     
     };
 
     let mouse_move = (event:MouseEvent) =>{
 
-      if(ctx) ctx.globalAlpha = 0.7;
+      if(ctx && isDraggingShapeRef.current) ctx.globalAlpha = 0.7;
       
       let mouseX = event.clientX - rect.left;
       let mouseY = event.clientY - rect.top;
-      if(isDraggingPoseRef.current){
-        
-
-
+      if(isDraggingShapeRef.current){
         let dx = mouseX - startX;
         let dy = mouseY - startY;
 
-        let current_shape = shapes[currentShapeIndexRef.current];
 
-        current_shape.x+=dx;
-        current_shape.y+=dy;
-
+        let coords = currentShapeRef.current.coords;
         
-        draw();
-
-        startX = mouseX;
-        startY = mouseY;
-
-        
-
-      }else if(isDraggingNativeRef.current){
-
-        let dx = mouseX - startX;
-        let dy = mouseY - startY;
-
-        let currentNative = natives.find((CP)=>CP.id == currentNativeIdRef.current)
-
-        const nativeCoords = currentNative?.nativeParameter?.coord;
-        
-        if(nativeCoords && currentNative.nativeParameter)
-          currentNative.nativeParameter.coord = {
-            x: nativeCoords.x + dx / scaleX,
-            y: nativeCoords.y - dy / scaleY,
+        if(coords && currentShapeRef.current)
+         currentShapeRef.current.coords = {
+            x: coords.x + dx / scaleX,
+            y: coords.y - dy / scaleY,
           };
 
+          if(currentShapeRef.current.type == "native"){
+            localPaths.forEach((path)=>{
+              path.controlPoints.forEach((CP)=>{
+                if(currentShapeRef.current.id == CP.id && CP.nativeParameter){
+                  CP.nativeParameter.coord = {
+                    x: coords.x + dx / scaleX,
+                    y: coords.y - dy / scaleY
+                  }
+                }
+              })
+              if(path.firstPose.id == currentShapeRef.current.id && path.firstPose.nativeParameter){
+                  path.firstPose.nativeParameter.coord = {
+                    x: coords.x + dx / scaleX,
+                    y: coords.y - dy / scaleY
+                  }
+              }
+              if(path.endPose.id == currentShapeRef.current.id && path.endPose.nativeParameter){
+                path.endPose.nativeParameter.coord = {
+                  x: coords.x + dx / scaleX,
+                  y: coords.y - dy / scaleY
+                } 
+              }
+            })
+          }else if (currentShapeRef.current.type == "pose"){
+            let activePose = localPoses.find((pose)=>pose.id == currentShapeRef.current.id)
+
+            if(activePose){
+              activePose.x = coords.x + dx / scaleX;
+              activePose.y = coords.y - dy / scaleY;
+            }
+            
+          }
+
         
         draw();
 
         startX = mouseX;
         startY = mouseY;
-
-
       }else{
         return
       }
@@ -374,31 +409,15 @@ export default function DrawPaths({
 
     //pose drawing
     
-    poses.forEach((pose) => {
-      if (pose.x === null || pose.y === null || pose.heading === null) return;
-      
-      const posX = centerX + (pose.x * scaleX);
-      const posY = centerY - (pose.y * scaleY);
-    
-      shapes.push({poseId:pose.id,x:posX, y:posY, radius:7,color:pose.color})
-      
-
-    });
+   
 
     let draw = ()=>{
       
       ctx.clearRect(0, 0, rect.width, rect.height);
-      shapes.forEach((shape)=>{
-        ctx.beginPath();
-        ctx.arc(shape.x, shape.y, shape.radius, 0, 2 * Math.PI);  
-        ctx.fillStyle = shape.color;
-        ctx.fill();
+      
 
-        
-      }) 
-
-      //pathsRef.current drawing using bspline class
-      pathsRef.current.forEach((path) => {
+      //path drawing using bspline class
+      localPaths.forEach((path) => {
         const spline = new bsplineClass(path, localPoses);
 
         const points: Vector[] = [];
@@ -427,248 +446,67 @@ export default function DrawPaths({
 
           ctx.stroke(); 
         }
-
-
-        //draw native points
-        
-        path.controlPoints.forEach((CP)=>{
-          if(CP.isNative){
-            ctx.beginPath();
-            ctx.fillStyle = path.color;
-            const x = centerX + ((CP.nativeParameter?.coord.x ?? 0) * scaleX);
-            const y = centerY - ((CP.nativeParameter?.coord.y ?? 0) * scaleY);
-            ctx.arc(x, y, 3, 0, 2 * Math.PI); 
-            ctx.fill();
-            ctx.beginPath();
-            
-            ctx.arc(x, y, 7, 0, 2 * Math.PI);  
-            ctx.stroke(); 
-            
-          }
-        })
-
-
-        //draw start pose
-        ctx.beginPath();
-        ctx.fillStyle = path.color;
-        const fX = centerX + ((path.firstPose.nativeParameter?.coord.x ?? 0) * scaleX);
-        const fY = centerY - ((path.firstPose.nativeParameter?.coord.y ?? 0) * scaleY);
-        ctx.arc(fX, fY, 3, 0, 2 * Math.PI); 
-        ctx.fill();
-        ctx.beginPath();
-
-        ctx.arc(fX, fY, 7, 0, 2 * Math.PI);  
-        ctx.stroke(); 
-        
-
-        //draw end pose
-        ctx.beginPath();
-        ctx.fillStyle = path.color;
-        const eX = centerX + ((path.endPose.nativeParameter?.coord.x ?? 0) * scaleX);
-        const eY = centerY - ((path.endPose.nativeParameter?.coord.y ?? 0) * scaleY);
-        ctx.arc(eX, eY, 3, 0, 2 * Math.PI); 
-        ctx.fill();
-        ctx.beginPath();
-
-        ctx.arc(eX, eY, 7, 0, 2 * Math.PI);  
-        ctx.stroke(); 
       });
       
 
-      
-
-     
-      
-    
+      //shape drawing
 
       shapes.forEach((shape)=>{
-        if(currentShapeIndexRef.current == shapes.indexOf(shape)){
+        if(shape.type == "native"){
+          ctx.beginPath();
+          ctx.fillStyle = shape.color;
+          const {x,y} = toPx(shape.coords)
+          ctx.arc(x, y, 3, 0, 2 * Math.PI); 
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(x, y, 7, 0, 2 * Math.PI);  
+          ctx.stroke(); 
+        }else if(shape.type == "pose"){
+          ctx.beginPath();
+          const {x,y} = toPx(shape.coords)
+          ctx.arc(x,y, 7, 0, 2 * Math.PI);  
+          ctx.fillStyle = shape.color;
+          ctx.fill();
+        }
+      })
+
+      
+
+     //box drawing
+      shapes.forEach((shape)=>{
+        if(currentShapeRef.current.id == shape.id){
           ctx.beginPath();
           let transX = 10,transY = 10;
-          let activePose = localPoses.find(p => p.id === shape.poseId);
-            if (activePose) {
-              activePose.x = (shape.x - centerX) / scaleX;
-              activePose.y = (centerY - shape.y) / scaleY;
-              if(activePose.x <= 0 && activePose.y >= 0) transX = 10, transY = 10;
-              if(activePose.x >= 0 && activePose.y >= 0) transX = -10 - 75, transY = 10;
-              if(activePose.x <= 0 && activePose.y <= 0) transX = 10, transY = -10 - 25;
-              if(activePose.x >= 0 && activePose.y <= 0) transX = -10 - 75, transY = -10 - 25;
-            }
-          
-          ctx.roundRect(shape.x + transX ,shape.y + transY,75,25,10);
-          ctx.fillStyle = "rgba(255,0,0,0.4)";
-          ctx.fill();
+              const {x,y} = toPx(shape.coords)
+              if(shape.coords.x <= 0 && shape.coords.y >= 0) transX = 10, transY = 10;
+              if(shape.coords.x >= 0 && shape.coords.y >= 0) transX = -10 - 75, transY = 10;
+              if(shape.coords.x <= 0 && shape.coords.y <= 0) transX = 10, transY = -10 - 25;
+              if(shape.coords.x >= 0 && shape.coords.y <= 0) transX = -10 - 75, transY = -10 - 25;
+            ctx.roundRect(x + transX ,y + transY,75,25,10);
+            ctx.fillStyle = "rgba(255,0,0,0.4)";
+            ctx.fill();
         }
       })
 
+      //text drawing
       shapes.forEach((shape)=>{
-
-        if(currentShapeIndexRef.current == shapes.indexOf(shape)){
+        if(currentShapeRef.current.id == shape.id){
           ctx.beginPath();
-          let activePose = localPoses.find(p => p.id === shape.poseId);
+          
           ctx.fillStyle = "white";
-          if (activePose) {
-            activePose.x = (shape.x - centerX) / scaleX;
-            activePose.y = (centerY - shape.y) / scaleY;
-
-            let transX = 15,transY = 25;
-
-            //lowk couldve used += for ts what am i doing(too lazy to change rn T-T)
-            if(activePose.x <= 0 && activePose.y >= 0) transX = 15, transY = 25 + 1;
-            if(activePose.x >= 0 && activePose.y >= 0) transX = -15 - 63, transY = 25+1;
-            if(activePose.x <= 0 && activePose.y <= 0) transX = 15 - 2, transY = -25 + 5;
-            if(activePose.x >= 0 && activePose.y <= 0) transX = -15 - 65, transY = -25 + 6;
-            
-
-            ctx.fillText("(" + activePose.x.toFixed(2) + "," + activePose.y.toFixed(2) + ")",shape.x + transX , shape.y + transY);
-          } 
           
-          ctx.fill();
-        } 
-      })
+          const {x,y} = toPx(shape.coords)
 
-      pathsRef.current.forEach((path,index)=>{ 
-        path.controlPoints.forEach((CP)=>{
-          if(CP.isNative && CP.nativeParameter){
-            if(currentNativeIdRef.current == CP.id){
-              ctx.beginPath();
-              ctx.fillStyle = "rgba(255,0,0,0.4)";
-              const x = centerX + (CP.nativeParameter.coord.x * scaleX);
-              const y = centerY - (CP.nativeParameter.coord.y * scaleY);
-              let transX = 10,transY = 10;
-         
-             
-              if(CP.nativeParameter.coord.x <= 0 && CP.nativeParameter.coord.y >= 0) transX = 10, transY = 10;
-              if(CP.nativeParameter.coord.x >= 0 && CP.nativeParameter.coord.y >= 0) transX = -10 - 75, transY = 10;
-              if(CP.nativeParameter.coord.x <= 0 && CP.nativeParameter.coord.y <= 0) transX = 10, transY = -10 - 25;
-              if(CP.nativeParameter.coord.x >= 0 && CP.nativeParameter.coord.y <= 0) transX = -10 - 75, transY = -10 - 25;
+          let transX = 15,transY = 25;
 
-              ctx.roundRect(x + transX,y + transY,75,25,10);
-              ctx.fill();
-            }
-          }
-        })
-
-        if(currentNativeIdRef.current == path.firstPose.id && index == 0){
-          ctx.beginPath();
-          ctx.fillStyle = "rgba(255,0,0,0.4)";
-          const FP = path.firstPose.nativeParameter?.coord;
-          if(FP){
-            const x = centerX + (FP.x * scaleX);
-            const y = centerY - (FP.y * scaleY);
-            let transX = 10,transY = 10;
-      
-          
-            if(FP.x <= 0 && FP.y >= 0) transX = 10, transY = 10;
-            if(FP.x >= 0 && FP.y >= 0) transX = -10 - 75, transY = 10;
-            if(FP.x <= 0 && FP.y <= 0) transX = 10, transY = -10 - 25;
-            if(FP.x >= 0 && FP.y <= 0) transX = -10 - 75, transY = -10 - 25;
-
-            ctx.roundRect(x + transX,y + transY,75,25,10);
-            ctx.fill();
-          }
-        }
-
-        if(currentNativeIdRef.current == path.endPose.id){
-          ctx.beginPath();
-          ctx.fillStyle = "rgba(255,0,0,0.4)";
-          const EP = path.endPose.nativeParameter?.coord;
-          if(EP){
-            const x = centerX + (EP.x * scaleX);
-            const y = centerY - (EP.y * scaleY);
-            let transX = 10,transY = 10;
-      
-          
-            if(EP.x <= 0 && EP.y >= 0) transX = 10, transY = 10;
-            if(EP.x >= 0 && EP.y >= 0) transX = -10 - 75, transY = 10;
-            if(EP.x <= 0 && EP.y <= 0) transX = 10, transY = -10 - 25;
-            if(EP.x >= 0 && EP.y <= 0) transX = -10 - 75, transY = -10 - 25;
-
-            ctx.roundRect(x + transX,y + transY,75,25,10);
-            ctx.fill();
-          }
-        }
-      })
-
-      
-      
-      pathsRef.current.forEach((path)=>{ 
-        path.controlPoints.forEach((CP)=>{
-          if(CP.isNative && CP.nativeParameter){
-            if(currentNativeIdRef.current == CP.id){
-              ctx.beginPath();
-              ctx.fillStyle = "white";
-              const x = centerX + (CP.nativeParameter.coord.x * scaleX);
-              const y = centerY - (CP.nativeParameter.coord.y * scaleY);
-              let transX = 10,transY = 10;
-         
-
-              if(CP.nativeParameter.coord.x <= 0 && CP.nativeParameter.coord.y >= 0) transX = 15, transY = 25 + 1;
-              if(CP.nativeParameter.coord.x >= 0 && CP.nativeParameter.coord.y >= 0) transX = -15 - 63, transY = 25+1;
-              if(CP.nativeParameter.coord.x <= 0 && CP.nativeParameter.coord.y <= 0) transX = 15 - 2, transY = -25 + 5;
-              if(CP.nativeParameter.coord.x >= 0 && CP.nativeParameter.coord.y <= 0) transX = -15 - 65, transY = -25 + 6;
-             
-            
-              ctx.fillText(
-              "(" + CP.nativeParameter.coord.x.toFixed(2) + 
-              "," + CP.nativeParameter.coord.y.toFixed(2) + ")", 
-              x + transX ,  y + transY);
-              
-              ctx.fill();
-            }
-          }
-        })
-
-        if(currentNativeIdRef.current == path.firstPose.id){
-          
-            ctx.beginPath();
-            ctx.fillStyle = "white";
-            const FP = path.firstPose.nativeParameter?.coord;
-            if(FP){
-              const x = centerX + (FP.x * scaleX);
-              const y = centerY - (FP.y * scaleY);
-              let transX = 10,transY = 10;
+          if(shape.coords.x <= 0 && shape.coords.y >= 0) transX = 15, transY = 25 + 1;
+          if(shape.coords.x >= 0 && shape.coords.y >= 0) transX = -15 - 63, transY = 25+1;
+          if(shape.coords.x <= 0 && shape.coords.y <= 0) transX = 15 - 2, transY = -25 + 5;
+          if(shape.coords.x >= 0 && shape.coords.y <= 0) transX = -15 - 65, transY = -25 + 6;
           
 
-              if(FP.x <= 0 && FP.y >= 0) transX = 15, transY = 25 + 1;
-              if(FP.x >= 0 && FP.y >= 0) transX = -15 - 63, transY = 25+1;
-              if(FP.x <= 0 && FP.y <= 0) transX = 15 - 2, transY = -25 + 5;
-              if(FP.x >= 0 && FP.y <= 0) transX = -15 - 65, transY = -25 + 6;
-              
-            
-              ctx.fillText(
-              "(" + FP.x.toFixed(2) + 
-              "," + FP.y.toFixed(2) + ")", 
-              x + transX ,  y + transY);
-              
-              ctx.fill();
-            }
-        }
-
-        if(currentNativeIdRef.current == path.endPose.id){
-          
-            ctx.beginPath();
-            ctx.fillStyle = "white";
-            const EP = path.endPose.nativeParameter?.coord;
-            if(EP){
-              const x = centerX + (EP.x * scaleX);
-              const y = centerY - (EP.y * scaleY);
-              let transX = 10,transY = 10;
-          
-
-              if(EP.x <= 0 && EP.y >= 0) transX = 15, transY = 25 + 1;
-              if(EP.x >= 0 && EP.y >= 0) transX = -15 - 63, transY = 25+1;
-              if(EP.x <= 0 && EP.y <= 0) transX = 15 - 2, transY = -25 + 5;
-              if(EP.x >= 0 && EP.y <= 0) transX = -15 - 65, transY = -25 + 6;
-              
-            
-              ctx.fillText(
-              "(" + EP.x.toFixed(2) + 
-              "," + EP.y.toFixed(2) + ")", 
-              x + transX ,  y + transY);
-              
-              ctx.fill();
-            }
+          ctx.fillText("(" + shape.coords.x.toFixed(2) + "," + shape.coords.y.toFixed(2) + ")",x + transX , y + transY);
         }
       })
 
@@ -681,7 +519,7 @@ export default function DrawPaths({
    
     
   
-  }, [poses, paths,pathsRef, imageLoaded,reRender]);
+  }, [poses, paths, imageLoaded,reRender]);
 
 
   return (

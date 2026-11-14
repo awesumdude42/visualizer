@@ -26,3 +26,10 @@ interface poseShape{
   radius:number
   color:string
 }
+
+interface Shape{
+  id:number
+  type: "native" | "pose" | "arc" | "none"
+  coords:Vector
+  color:string
+}

@@ -18,13 +18,18 @@ interface PoseControlProps {
   addPose: () => void;
   updatePose: (id: number, updatedFields: Partial<Pose>) => void;
   setPoses: Dispatch<SetStateAction<Pose[]>>;
-  currentShapeIndex:number;
-  setCurrentShapeIndex: Dispatch<SetStateAction<number>>;
-
+  currentShape:Shape
+  setCurrentShape: Dispatch<SetStateAction<Shape>>
 }
 
 export default function PoseControls ({
-  poses, deletePose, addPose, updatePose, setPoses,currentShapeIndex,setCurrentShapeIndex
+  poses,
+  deletePose,
+  addPose,
+  updatePose, 
+  setPoses,
+  currentShape,
+  setCurrentShape
 }: PoseControlProps) {
   
 
@@ -52,8 +57,9 @@ export default function PoseControls ({
 
       
     })
-    if (!poses[currentShapeIndex]) return; 
-    scrollToSection(`${poses[currentShapeIndex].id}`)
+
+    if(currentShape.type == "pose") scrollToSection(`${currentShape.id}`)
+
   },[poses])
   
   function checkForDuplicateName(e: React.FocusEvent<HTMLInputElement>, poseId: number) {
@@ -117,8 +123,19 @@ export default function PoseControls ({
             {poses.map((pose) => (
               <SortableItem key={pose.id} value={pose.id} id={`${pose.id}`} className="hover:transparent" asChild>
                 <div className="p-1">
-                  <Accordion type="single" collapsible  value={`${pose.id}` + pose.open}className={`w-full ${currentShapeIndex == poses.indexOf(pose) && "bg-red-900"} rounded-lg`}> 
-                    <AccordionItem value={`${pose.id}`} onClick={()=>{setCurrentShapeIndex(poses.indexOf(pose))}} className="border-none">
+                  <Accordion type="single" collapsible  value={`${pose.id}` + pose.open}className={`w-full ${(currentShape.type == "pose" && currentShape.id == pose.id) && "bg-red-900"} rounded-lg`}> 
+                    <AccordionItem value={`${pose.id}`} 
+                    onClick={()=>{
+                      setCurrentShape({
+                        id:pose.id,
+                        coords:{
+                          x:pose.x ?? 0,
+                          y:pose.y ?? 0
+                        },
+                        type:"pose",
+                        color:""
+                      })
+                    }} className="border-none">
                       <div className="relative flex items-center w-full min-h-10 py-1">
                         <div className="relative z-10 flex flex-1 items-center justify-between gap-4 pointer-events-none pr-8">
                           <div className="flex items-center gap-2 flex-1 pointer-events-auto">
@@ -181,7 +198,15 @@ export default function PoseControls ({
                               updatePose(pose.id,{open : " "})
                             }
 
-                            setCurrentShapeIndex(poses.indexOf(pose))
+                            setCurrentShape({
+                              id:pose.id,
+                              coords:{
+                                x:pose.x ?? 0,
+                                y:pose.y ?? 0
+                              },
+                              type:"pose",
+                              color:""
+                            })
                             
                           }}
                           className="absolute inset-0 z-0 flex h-full w-full items-center justify-between p-0 pr-4 border-none hover:no-underline text-zinc-400"
