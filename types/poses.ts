@@ -32,4 +32,6 @@ interface Shape{
   type: "native" | "pose" | "arc" | "none"
   coords:Vector
   color:string
+  coords2?:Vector // coords2 will be used if there is an arcpose, coords is left and coords2 is right
+  currentArc?: "left" | "right" | "none"
 }

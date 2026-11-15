@@ -5,6 +5,7 @@ import { bsplineClass } from '@/lib/bsplineClass';
 import { Settings } from "@/hooks/use-visualizer";
 import { Cpu } from "lucide-react";
 import PlaybackControls from "./playback-controls";
+import { Lerp } from "@/lib/lerp";
 
 interface PathDrawProps {
   poses: Pose[];
@@ -103,16 +104,21 @@ export default function DrawPaths({
         },
         color: pose.color
       })
+
     })
 
     const localPoses = poses.map(pose => ({ ...pose }));
 
     const localPaths = paths.map(path => ({ ...path }));
 
-    //add native control points
-    localPaths.forEach((path)=>{
+  
 
+    //add native control points
+    localPaths.forEach((path,index)=>{
+
+      const list:ControlPoint[] = [path.firstPose,...path.controlPoints,path.endPose]
       //first
+      if(index == 0) // only adds the first if its the first path, without this, there are some weird errors with drag
       shapes.push({
         id:path.firstPose.id,
         type:"native",
@@ -128,6 +134,38 @@ export default function DrawPaths({
             coords:CP.nativeParameter.coord,
             color: path.color
           })
+        if(CP.nativeParameter?.arcPose){
+          const index = list.findIndex((p)=>p.id == CP.id)
+          const spline = new bsplineClass(path,localPoses)
+          if(index){
+            const arcPoses = spline.getArcPoses(index)
+
+            shapes.push({
+              id:CP.id,
+              type:"arc",
+              coords:arcPoses[0],
+              color:"#000000",
+              coords2:arcPoses[1]
+            })
+          }
+        }else{
+          const pose = localPoses.find((pose)=>pose.id == CP.poseId)
+          if(pose?.arcPose){
+            const index = list.findIndex((p)=>p.id == CP.id)
+            const spline = new bsplineClass(path,localPoses)
+            if(index){
+              const arcPoses = spline.getArcPoses(index)
+
+              shapes.push({
+                id:CP.poseId as number,
+                type:"arc",
+                coords:arcPoses[0],
+                color:"#000000",
+                coords2:arcPoses[1]
+              })
+            }
+          }
+        }
       })
       //end
       shapes.push({
@@ -149,19 +187,66 @@ export default function DrawPaths({
 
 
     //drag and drop checker
-    let is_mouse_in_shape = (x:number, y:number,shape:Shape) =>{ //TODO make sure this handles arcposes correctly
+    let is_mouse_in_shape = (x:number, y:number,shape:Shape) =>{ 
       let tolerance = 10;
       if(shape.type == "native") tolerance = 12;
+
+      
+
+      if(shape.type == "arc" && shape.coords2){
+        tolerance = 7;
+        const left = toPx(shape.coords)
+        const right = toPx(shape.coords2)
+
+        const leftDist =  (x - left.x)**2 + (y-left.y)**2 
+        const rightDist =  (x - right.x)**2 + (y-right.y)**2
+
+        if(leftDist <= 5**2 + tolerance**2){ // if in left
+          shape.currentArc = "left";
+          return true;
+        }
+        else if(rightDist <= 5**2 + tolerance**2){
+          shape.currentArc = "right";
+          return true
+        }
+        else{
+          shape.currentArc == "none";
+          return false;
+        }
+      }
 
       const s = toPx(shape.coords)
       let squaredDist = (x - s.x)**2 + (y - s.y)**2
 
 
       if(shape.type == "pose")return squaredDist <= 7**2 + tolerance**2
-      else return squaredDist <= 8**2 + tolerance**2
+      else if(shape.type == "native") return squaredDist <= 8**2 + tolerance**2
     }
 
 
+
+    let is_mouse_in_lerp=(x:number,y:number,lerp:Lerp) =>{
+      
+      let coords1 = lerp.P1;
+      let coords2 = lerp.P2;
+
+      let tolerance = 20;
+
+      const numPoints = Math.abs(lerp.getDistance(0)) * 50;
+
+      for(let i = 0; i <= numPoints; i++){
+        const t = i/numPoints;
+        const pt = lerp.evaluate(t);
+
+        let cp = toPx(pt)
+
+        const squaredDist = (x - cp.x) ** 2 + (y - cp.y) ** 2;
+        if (squaredDist <= tolerance**2) {
+          return true;
+        }
+      }
+      return false;
+    }
 
   
     let is_mouse_in_path = (x:number,y:number,spline:bsplineClass,path:Path)=>{
@@ -173,9 +258,8 @@ export default function DrawPaths({
         const t = i / numPoints;
         const pt = spline.evaluate(t);
 
-        const cpX = centerX + (pt.x * scaleX);
-        const cpY = centerY - (pt.y * scaleY);
-        const squaredDist = (x - cpX) ** 2 + (y - cpY) ** 2;
+        const cp = toPx(pt)
+        const squaredDist = (x - cp.x) ** 2 + (y - cp.y) ** 2;
         if (squaredDist <= tolerance**2) {
           return true;
         }
@@ -191,13 +275,27 @@ export default function DrawPaths({
       let reached = false;
 
       for (const shape of shapes) {
-        if (is_mouse_in_shape(startX, startY, shape)) {
+        if (is_mouse_in_shape(startX, startY, shape) && shape.type !="arc") {
           currentShapeRef.current = shape;                              
           setCurrentShape({ ...shape, coords: { ...shape.coords } });  
           isDraggingShapeRef.current = true;
           reached = true;
           draw();
           break;
+        }else{
+          //now for arc poses
+          if(shape.type == "arc"){
+            for (const shape of shapes) {
+              if (is_mouse_in_shape(startX, startY, shape)){
+                currentShapeRef.current = shape;
+                setCurrentShape({ ...shape, coords: { ...shape.coords } });
+                isDraggingShapeRef.current = true;
+                reached = true;
+                draw();
+                break;
+              }
+            }
+          }
         }
       }
 
@@ -311,7 +409,7 @@ export default function DrawPaths({
 
         let coords = currentShapeRef.current.coords;
         
-        if(coords && currentShapeRef.current)
+        if(coords && currentShapeRef.current && currentShapeRef.current.type !== "arc" ) 
          currentShapeRef.current.coords = {
             x: coords.x + dx / scaleX,
             y: coords.y - dy / scaleY,
@@ -319,14 +417,253 @@ export default function DrawPaths({
 
           if(currentShapeRef.current.type == "native"){
             localPaths.forEach((path)=>{
-              path.controlPoints.forEach((CP)=>{
+              const list:ControlPoint[] = [path.firstPose,...path.controlPoints,path.endPose]
+              path.controlPoints.forEach((CP,index)=>{
+                //if it is reg control point,
                 if(currentShapeRef.current.id == CP.id && CP.nativeParameter){
                   CP.nativeParameter.coord = {
                     x: coords.x + dx / scaleX,
                     y: coords.y - dy / scaleY
                   }
+
+                  //if it is an arc pose, edit arc pose values too!
+                  if(CP.nativeParameter.arcPose){
+                    shapes.forEach((shape)=>{
+                      if(shape.type == "arc" && shape.id == CP.id && shape.coords2){
+                        const index = list.findIndex((p)=>p.id == CP.id)
+                        const spline = new bsplineClass(path,localPoses)
+                        const arcPoses = spline.getArcPoses(index);
+                        shape.coords = {
+                          x: arcPoses[0].x + dx / scaleX,
+                          y: arcPoses[0].y - dy / scaleY
+                        }
+                        shape.coords2 = {
+                          x: arcPoses[1].x + dx / scaleX,
+                          y: arcPoses[1].y - dy / scaleY
+                        }
+                      }
+                    })
+                  }
+                  //some points influences arposes, so lets add that! documenting my thoughts cus ive tried this multiple times to no success
+                  //first, we need to figure out which side of the arcpose needs updating
+
+                  //so this current could either be on right or left
+                  if(index == 0 && path.controlPoints.length > 1){
+                    //if its the first pose in the list and there is a pose after it
+                    //get the pose to the right
+                    const right = path.controlPoints.at(index + 1)
+                    if(right?.isNative && right.nativeParameter && right.nativeParameter.arcPose){ // make sure its an arcpose
+                      //now loop through shapes
+                      shapes.forEach((shape)=>{
+                        if(shape.type == "arc" && shape.coords2 && shape.id == right.id){//if its an arc pose with the right id
+                          //then, we update the arc pose
+                          const index = list.findIndex((p)=>p.id == right.id)//get the arcpose index of the right control point
+                          const spline = new bsplineClass(path,localPoses)// create spline
+                          const arcPoses = spline.getArcPoses(index);// get arcposes
+                          shape.coords = { // edit arcpose location, it is [0] because arc pose is to the left of the actual pose
+                            x: arcPoses[0].x + dx / scaleX,
+                            y: arcPoses[0].y - dy / scaleY
+                          }
+                          //AFTER DOCUMENTING TS, IT FINALLY WORKS, THIS IS WHY I HAVE AN ARMADA OF DUCKS NEXT TO MY LAPTOP
+                          //now, ima just copy and past this down for the last pose
+                        }
+                      })
+                    }else{
+                      if(right){
+                        const pose = localPoses.find((pose)=>pose.id == right.poseId)
+                        if(pose && pose.arcPose){
+                          shapes.forEach((shape)=>{
+                            if(shape.type == "arc" && shape.id == pose.id && shape.coords2){
+                              const index = list.findIndex((p)=>p.id == pose.id)
+                              const spline = new bsplineClass(path,localPoses)
+                              const arcPoses = spline.getArcPoses(index);
+                              shape.coords = {
+                                x: arcPoses[0].x + dx / scaleX,
+                                y: arcPoses[0].y - dy / scaleY
+                              }
+                            }
+                          })
+                        }
+                      }
+                    }
+                  }else if(index == path.controlPoints.length-1 && path.controlPoints.length > 1){
+                    const left = path.controlPoints.at(index - 1)
+                    if(left?.isNative && left.nativeParameter && left.nativeParameter.arcPose){ 
+                      shapes.forEach((shape)=>{
+                        if(shape.type == "arc" && shape.coords2 && shape.id == left.id){
+                          const index = list.findIndex((p)=>p.id == left.id)
+                          const spline = new bsplineClass(path,localPoses)
+                          const arcPoses = spline.getArcPoses(index);
+                          shape.coords2 = { 
+                            x: arcPoses[1].x + dx / scaleX,
+                            y: arcPoses[1].y - dy / scaleY
+                          }
+                        }
+                      })
+                    }else{
+                      if(left){
+                        const pose = localPoses.find((pose)=>pose.id == left.poseId)
+                        if(pose && pose.arcPose){
+                          shapes.forEach((shape)=>{
+                            if(shape.type == "arc" && shape.id == pose.id && shape.coords2){
+                              const index = list.findIndex((p)=>p.id == pose.id)
+                              const spline = new bsplineClass(path,localPoses)
+                              const arcPoses = spline.getArcPoses(index);
+                              shape.coords2 = {
+                                x: arcPoses[1].x + dx / scaleX,
+                                y: arcPoses[1].y - dy / scaleY
+                              }
+                            }
+                          })
+                        }
+                      }
+                    }
+                  }else{
+                    //now, here is the most complicated one, cus we needa check left and right
+                    const right = path.controlPoints.at(index + 1)
+                    const left = path.controlPoints.at(index - 1)
+                    //check left
+                    if(left && left.isNative && left.nativeParameter && left.nativeParameter.arcPose){ 
+                      shapes.forEach((shape)=>{
+                        if(shape.type == "arc" && shape.coords2 && shape.id == left.id){
+                          const index = list.findIndex((p)=>p.id == left.id)
+                          const spline = new bsplineClass(path,localPoses)
+                          const arcPoses = spline.getArcPoses(index);
+                          shape.coords2 = { 
+                            x: arcPoses[1].x + dx / scaleX,
+                            y: arcPoses[1].y - dy / scaleY
+                          }
+                        }
+                      })
+                    }else{
+                      if(left){
+                        const pose = localPoses.find((pose)=>pose.id == left.poseId)
+                        if(pose && pose.arcPose){
+                          shapes.forEach((shape)=>{
+                            if(shape.type == "arc" && shape.id == pose.id && shape.coords2){
+                              const index = list.findIndex((p)=>p.id == pose.id)
+                              const spline = new bsplineClass(path,localPoses)
+                              const arcPoses = spline.getArcPoses(index);
+                              shape.coords2 = {
+                                x: arcPoses[1].x + dx / scaleX,
+                                y: arcPoses[1].y - dy / scaleY
+                              }
+                            }
+                          })
+                        }
+                      }
+                    }
+                    //check right
+                    if(right && right.isNative && right.nativeParameter && right.nativeParameter.arcPose){ 
+                      shapes.forEach((shape)=>{
+                        if(shape.type == "arc" && shape.coords2 && shape.id == right.id){
+                          const index = list.findIndex((p)=>p.id == right.id)
+                          const spline = new bsplineClass(path,localPoses)
+                          const arcPoses = spline.getArcPoses(index);
+                          shape.coords = {
+                            x: arcPoses[0].x + dx / scaleX,
+                            y: arcPoses[0].y - dy / scaleY
+                          }
+                        }
+                      })
+                    }else{
+                      if(right){
+                        const pose = localPoses.find((pose)=>pose.id == right.poseId)
+                        if(pose && pose.arcPose){
+                          shapes.forEach((shape)=>{
+                            if(shape.type == "arc" && shape.id == pose.id && shape.coords2){
+                              const index = list.findIndex((p)=>p.id == pose.id)
+                              const spline = new bsplineClass(path,localPoses)
+                              const arcPoses = spline.getArcPoses(index);
+                              shape.coords = {
+                                x: arcPoses[0].x + dx / scaleX,
+                                y: arcPoses[0].y - dy / scaleY
+                              }
+                            }
+                          })
+                        }
+                      }
+                    }
+                  }
                 }
               })
+
+
+              //now for the EDGE OF EDGE cases! the first and endposes of the path can also influence the control points
+              if(path.firstPose.id == currentShapeRef.current.id && path.firstPose.nativeParameter){
+                //seperating it from below if statement for clarity
+                if(path.controlPoints.length > 0){
+                  const left = path.controlPoints.at(0)
+                  if(left?.isNative && left.nativeParameter && left.nativeParameter.arcPose){ 
+                    shapes.forEach((shape)=>{
+                      if(shape.type == "arc" && shape.coords2 && shape.id == left.id){
+                        const index = list.findIndex((p)=>p.id == left.id)
+                        const spline = new bsplineClass(path,localPoses)
+                        const arcPoses = spline.getArcPoses(index);
+                        shape.coords = { 
+                          x: arcPoses[0].x + dx / scaleX,
+                          y: arcPoses[0].y - dy / scaleY
+                        }
+                      }
+                    })
+                  }else{
+                    if(left){
+                      const pose = localPoses.find((pose)=>pose.id == left.poseId)
+                      if(pose && pose.arcPose){
+                        shapes.forEach((shape)=>{
+                          if(shape.type == "arc" && shape.id == pose.id && shape.coords2){
+                            const index = list.findIndex((p)=>p.id == pose.id)
+                            const spline = new bsplineClass(path,localPoses)
+                            const arcPoses = spline.getArcPoses(index);
+                            shape.coords = {
+                              x: arcPoses[0].x + dx / scaleX,
+                              y: arcPoses[0].y - dy / scaleY
+                            }
+                          }
+                        })
+                      }
+                    }
+                  }
+                }
+              }
+              if(path.endPose.id == currentShapeRef.current.id && path.endPose.nativeParameter){
+                //seperating it from prev thing for clarity
+                if(path.controlPoints.length > 0){
+                  const right = path.controlPoints.at(-1)
+                  if(right?.isNative && right.nativeParameter && right.nativeParameter.arcPose){ 
+                    shapes.forEach((shape)=>{
+                      if(shape.type == "arc" && shape.coords2 && shape.id == right.id){
+                        const index = list.findIndex((p)=>p.id == right.id)
+                        const spline = new bsplineClass(path,localPoses)
+                        const arcPoses = spline.getArcPoses(index);
+                        shape.coords2 = { 
+                          x: arcPoses[1].x + dx / scaleX,
+                          y: arcPoses[1].y - dy / scaleY
+                        }
+                      }
+                    })
+                  }else{
+                    if(right){
+                      const pose = localPoses.find((pose)=>pose.id == right.poseId)
+                      if(pose && pose.arcPose){
+                        shapes.forEach((shape)=>{
+                          if(shape.type == "arc" && shape.id == pose.id && shape.coords2){
+                            const index = list.findIndex((p)=>p.id == pose.id)
+                            const spline = new bsplineClass(path,localPoses)
+                            const arcPoses = spline.getArcPoses(index);
+                            shape.coords2 = {
+                              x: arcPoses[1].x + dx / scaleX,
+                              y: arcPoses[1].y - dy / scaleY
+                            }
+                          }
+                        })
+                      }
+                    }
+                  }
+                }
+              }
+
+
               if(path.firstPose.id == currentShapeRef.current.id && path.firstPose.nativeParameter){
                   path.firstPose.nativeParameter.coord = {
                     x: coords.x + dx / scaleX,
@@ -347,7 +684,112 @@ export default function DrawPaths({
               activePose.x = coords.x + dx / scaleX;
               activePose.y = coords.y - dy / scaleY;
             }
+            if(activePose?.arcPose){
+              localPaths.forEach((path)=>{
+                const list:ControlPoint[] = [path.firstPose,...path.controlPoints,path.endPose]
+                path.controlPoints.forEach((CP)=>{
+                  if(!CP.isNative){
+                    const pose = localPoses.find((pose)=>pose.id == CP.poseId)
+                    if(pose && pose.arcPose){
+                      shapes.forEach((shape)=>{
+                        if(shape.type == "arc" && shape.id == CP.poseId && shape.coords2){
+                          const index = list.findIndex((p)=>p.id == CP.poseId)
+                          const spline = new bsplineClass(path,localPoses)
+                          const arcPoses = spline.getArcPoses(index);
+                          shape.coords = {
+                            x: arcPoses[0].x + dx / scaleX,
+                            y: arcPoses[0].y - dy / scaleY
+                          }
+                          shape.coords2 = {
+                            x: arcPoses[1].x + dx / scaleX,
+                            y: arcPoses[1].y - dy / scaleY
+                          }
+                        }
+                      })
+                    }
+                  }
+                })
+              })
+            }
+          }else if(currentShapeRef.current.type == "arc"){
+
+            //this ENTIRE thing is for native control points, i need to make make it for poses
+            localPaths.forEach((path)=>{
+              //gonna use linear interpolation for this
+              const P1 = path.controlPoints.find((CP)=>CP.id == currentShapeRef.current.id) // finds the CP with the arcpose's id
             
+              //alright, now we need to figure out which pose is being moved
+
+              shapes.forEach((shape)=>{
+                if(shape.type == "arc" && shape.id == currentShapeRef.current.id && shape.coords2){
+                  
+                  //now, the current Arc shouldve been set
+                  if(shape.currentArc == "left" && P1){
+                    //now that we know that it the left, we can find P2
+                    const index = path.controlPoints.findIndex((CP)=>P1.id == CP.id)
+                    let P2:ControlPoint;
+                    if(index == 0){
+                      //only if it is the first control point
+                      P2 = path.firstPose;
+                    }else{
+                      //there has to be more than 1 control point because the end points cant be arc poses
+                      const prevCP = path.controlPoints[index - 1]
+                      P2 = prevCP 
+                      
+                      
+                    }
+                    const y = (centerY - mouseY) / scaleY
+                    const lerp = new Lerp(P1,P2,localPoses)
+                    if(is_mouse_in_lerp(mouseX,mouseY,lerp)){
+
+                     
+                      shape.coords = {
+                        x:lerp.getX(y),
+                        y:lerp.clampY(y)
+                      }
+
+                      //now we need to update the radius 
+
+                      
+                      const radius = Math.abs(Math.sqrt((lerp.P1.x - shape.coords.x)**2 + (lerp.P1.y - shape.coords.y)**2))
+                      path.controlPoints.forEach((CP)=>{
+                        if(CP.id == currentShapeRef.current.id && CP.nativeParameter && CP.nativeParameter.arcPose){
+                          CP.nativeParameter.radius = radius;
+                        }
+                      })
+
+                    }
+                  }else if(shape.currentArc == "right" && P1){
+                    const index = path.controlPoints.findIndex((CP)=>P1.id == CP.id)
+                    let P2:ControlPoint;
+                    if(index == path.controlPoints.length - 1){
+                      P2 = path.endPose;
+                    }else{
+                      const prevCP = path.controlPoints[index + 1]
+                      P2 = prevCP 
+                      
+                      
+                    }
+                    const y = (centerY - mouseY) / scaleY
+                    const lerp = new Lerp(P1,P2,localPoses)
+                    if(is_mouse_in_lerp(mouseX,mouseY,lerp)){
+                      shape.coords2 = {
+                        x:lerp.getX(y),
+                        y:lerp.clampY(y)
+                      }
+                      const radius = Math.abs(Math.sqrt((lerp.P1.x - shape.coords2.x)**2 + (lerp.P1.y - shape.coords2.y)**2))
+                      path.controlPoints.forEach((CP)=>{
+                        if(CP.id == currentShapeRef.current.id && CP.nativeParameter && CP.nativeParameter.arcPose){
+                          CP.nativeParameter.radius = radius;
+                        }
+                      })
+                    }
+                  }
+                }
+              })
+              
+              
+            })
           }
 
         
@@ -450,7 +892,7 @@ export default function DrawPaths({
       
 
       //shape drawing
-
+      
       shapes.forEach((shape)=>{
         if(shape.type == "native"){
           ctx.beginPath();
@@ -458,16 +900,35 @@ export default function DrawPaths({
           const {x,y} = toPx(shape.coords)
           ctx.arc(x, y, 3, 0, 2 * Math.PI); 
           ctx.fill();
-
           ctx.beginPath();
+          ctx.strokeStyle = shape.color;
+          ctx.lineWidth = 3;
           ctx.arc(x, y, 7, 0, 2 * Math.PI);  
           ctx.stroke(); 
+
         }else if(shape.type == "pose"){
           ctx.beginPath();
           const {x,y} = toPx(shape.coords)
           ctx.arc(x,y, 7, 0, 2 * Math.PI);  
           ctx.fillStyle = shape.color;
           ctx.fill();
+        }else if(shape.type == "arc" && shape.coords2){
+
+          //left
+          ctx.beginPath();
+          const {x:xL,y:yL} = toPx(shape.coords)
+          ctx.arc(xL,yL, 5, 0, 2 * Math.PI);  
+          ctx.strokeStyle = shape.color;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          //right
+          ctx.beginPath();
+          const {x:xR,y:yR} = toPx(shape.coords2)
+          ctx.arc(xR,yR, 5, 0, 2 * Math.PI);  
+          ctx.strokeStyle = shape.color;
+          ctx.lineWidth = 2;
+          ctx.stroke();
         }
       })
 
@@ -475,7 +936,7 @@ export default function DrawPaths({
 
      //box drawing
       shapes.forEach((shape)=>{
-        if(currentShapeRef.current.id == shape.id){
+        if(currentShapeRef.current.id == shape.id && (shape.type == "native" || shape.type == "pose")){
           ctx.beginPath();
           let transX = 10,transY = 10;
               const {x,y} = toPx(shape.coords)
@@ -491,7 +952,7 @@ export default function DrawPaths({
 
       //text drawing
       shapes.forEach((shape)=>{
-        if(currentShapeRef.current.id == shape.id){
+        if(currentShapeRef.current.id == shape.id && (shape.type == "native" || shape.type == "pose")){
           ctx.beginPath();
           
           ctx.fillStyle = "white";

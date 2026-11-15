@@ -55,8 +55,15 @@ export default function PoseControls ({
         }
       }
 
-      
     })
+
+    if(currentShape.type == "pose"){
+      const pose = poses.find((pose)=>pose.id == currentShape.id)
+
+      if(pose?.open){
+        updatePose(pose.id,{open:""})
+      }
+    }
 
     if(currentShape.type == "pose") scrollToSection(`${currentShape.id}`)
 

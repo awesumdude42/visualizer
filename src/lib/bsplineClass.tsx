@@ -36,25 +36,12 @@ export class bsplineClass {
 
         //connect paths
 
-        //can either be a native or pose reference
+        
         if(path.firstPose.isNative && path.firstPose.nativeParameter){
             arcPoseVectors.push({
                 vector:path.firstPose.nativeParameter.coord,
                 arcPose:false,
                 radius:0})
-        }else{
-            //pose reference
-            const pose = fullPoses.find((pose)=>pose.id == path.firstPose?.poseId)
-            if(pose){
-                arcPoseVectors.push({
-                    vector:{
-                        x: pose.x ?? 0,
-                        y: pose.y ?? 0
-                    },
-                    arcPose:false,
-                    radius:0
-                })
-            }
         }
         
 
@@ -95,25 +82,12 @@ export class bsplineClass {
         //add endPose
 
         
-        //can either be a native or pose reference
+       
         if(path.endPose.isNative && path.endPose.nativeParameter){
             arcPoseVectors.push({
                 vector:path.endPose.nativeParameter.coord,
                 arcPose:false,
                 radius:0})
-        }else{
-            //pose reference
-            const pose = fullPoses.find((pose)=>pose.id == path.endPose?.poseId)
-            if(pose){
-                arcPoseVectors.push({
-                    vector:{
-                        x: pose.x ?? 0,
-                        y: pose.y ?? 0
-                    },
-                    arcPose:false,
-                    radius:0
-                })
-            }
         }
 
         this.arcPoseVectors = arcPoseVectors;
@@ -295,7 +269,61 @@ export class bsplineClass {
 
     getArcPoses(index:number){
 
-        
+        let returnValue:Vector[] = [{x:0,y:0}];
+
+        this.arcPoseVectors.map((APV, index) => {
+            if (APV.arcPose == true) {
+
+                const vector = APV.vector;
+                let r = APV.radius
+
+                //if endpoints
+                if (index != 0 && index != (this.arcPoseVectors.length - 1)) {
+
+                    //get vectors
+                    const leftVector = this.arcPoseVectors[index - 1].vector
+
+                    const rightVector = this.arcPoseVectors[index + 1].vector
+
+
+                    //get distance from center vector
+                    const leftDist = Math.sqrt(
+                        (leftVector.x - vector.x) ** 2
+                        +
+                        (leftVector.y - vector.y) ** 2
+                    )
+
+                    const rightDist = Math.sqrt(
+                        (rightVector.x - vector.x) ** 2
+                        +
+                        (rightVector.y - vector.y) ** 2
+                    )
+
+                    //make sure that the radius isn't more than the distance between the two
+                    if (rightDist < r || leftDist < r) {
+                        r = Math.min(rightDist, leftDist)
+                    }
+
+                    //formula created by me :)
+                    const leftArcPose = {
+                        x: vector.x + (((leftVector.x - vector.x) / leftDist) * r),
+                        y: vector.y + (((leftVector.y - vector.y) / leftDist) * r)
+                    }
+
+                    const rightArcPose = {
+                        x: vector.x + (((rightVector.x - vector.x) / rightDist) * r),
+                        y: vector.y + (((rightVector.y - vector.y) / rightDist) * r)
+                    }
+
+                    //gonna gonna just make it so it only returns a value if the arcposes are valid 
+                    //HOW COULD THIS POSSIBLY GO WRONG right?
+ 
+                    //update:it went wrong... so now it returns a value anyway
+                    returnValue =  [leftArcPose,rightArcPose]
+                } 
+            }
+        })
+        return returnValue;
     }
 
 }
