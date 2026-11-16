@@ -9,7 +9,7 @@ This visualizer is for Apex Pathing, a Pathing software for the First Tech Chall
 * Adding paths with poses on field as control points
 * Drag and drop for poses
 * Settings menu with options for custom fields, drivetrain type, and default unit
-* Arc pose functionality like how the [docs](https://www.apexpathing.com/docs/arc-poses) state, letting you customize the radius of the arc pose. Currently, dragging on the field to edit radius is not functional.
+* Arc pose functionality like how the [docs](https://www.apexpathing.com/docs/arc-poses) state, letting you customize the radius of the arc pose. Currently, dragging on the field to edit radius is semi-functional and bugs are still being worked on.
 * Heading interpolation selection
 * Custom pose and path colors
 
