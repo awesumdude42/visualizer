@@ -4,7 +4,7 @@ interface Pose {
   x: number | null
   y: number | null
   heading: number | null
-  radius: number | null
+  radius: number
   arcPose: boolean
   local: boolean
   color:string

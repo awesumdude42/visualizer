@@ -106,7 +106,7 @@ export default function Home() {
           />
         </ResizablePanel>
         <ResizableHandle withHandle />
-        <ResizablePanel maxSize="1000px" minSize="330px" collapsible>
+        <ResizablePanel maxSize="1000px" minSize="350px" collapsible>
           <div className="h-full items-center justify-center">
             <span className="font-semibold">
               <PathControls

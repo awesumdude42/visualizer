@@ -84,7 +84,7 @@ export default function PoseControls ({
   }
 
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement>, poseId: number, field: keyof Pose, min: number, max: number) {
-    let final = null;
+    let final = 0;
     if (e.target.value !== "") {
       const parsed = parseFloat(e.target.value);
       if (!isNaN(parsed)) { final = Math.max(min, Math.min(max, parsed)); }
@@ -212,7 +212,7 @@ export default function PoseControls ({
                                 y:pose.y ?? 0
                               },
                               type:"pose",
-                              color:""
+                              color:pose.color
                             })
                             
                           }}
@@ -269,7 +269,7 @@ export default function PoseControls ({
                                 min={0}
                                 max={360}
                                 className="w-20 transition-colors focus-visible:border-red-500 focus-visible:ring-red-500 bg-zinc-900"
-                                defaultValue={pose.heading ?? 0}
+                                value={pose.heading ?? 0}
                                 onChange={(e) => handleInputChange(e, pose.id, 'heading', 0, 360)}
                                 onBlur={(e) => handleInputBlur(e, pose.id, 'heading', 0, 360)}
                               />
@@ -284,8 +284,16 @@ export default function PoseControls ({
                                 placeholder="Radius"
                                 disabled={!pose.arcPose} // TODO: Add limits and clamping for radius (make sure to account for units)
                                 className="w-20 transition-all duration-300 ease-in-out focus-visible:border-red-500 focus-visible:ring-red-500 disabled:cursor-not-allowed disabled:opacity-40 bg-zinc-900"
-                                defaultValue={pose.radius ?? 0}
-                                onChange={(e) => handleInputChange(e, pose.id, 'radius', 0, 100)}
+                                value = {pose.radius}
+                                onChange={(e) =>{
+                                  
+                                  if (e.target.value !== "") {
+                                    const parsed = parseFloat(e.target.value);
+                                    let final = parsed;
+                                    if (!isNaN(parsed)) final = pose.radius;
+                                    updatePose(pose.id,{radius:final})
+                                  }
+                                }}
                                 onBlur={(e) => handleInputBlur(e, pose.id, 'radius', 0, 100)} // TODO: Proper limits
                               />
                             </Field>
@@ -297,7 +305,7 @@ export default function PoseControls ({
                                 id={`arc-pose-${pose.id}`}
                                 checked={pose.arcPose}
                                 onCheckedChange={(checked: boolean) => {
-                                  updatePose(pose.id, { arcPose: checked, radius: checked ? 2 : 0 });
+                                  updatePose(pose.id, { arcPose: checked, radius: pose.radius == 0 ? 2 : Number(pose.radius.toFixed(3)) });
                                 }}
                               />
                               <label htmlFor={`arc-pose-${pose.id}`} className="text-xs cursor-pointer select-none">

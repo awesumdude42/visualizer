@@ -13,7 +13,7 @@ export class Lerp{
         if(P1.isNative && P1.nativeParameter){
             this.P1 = P1.nativeParameter.coord
         }else{
-            const pose = poses.find((pose)=>{P1.poseId})
+            const pose = poses.find((pose)=>pose.id == P1.poseId)
             
             this.P1 = {
                 x:pose?.x ?? 0,
@@ -59,15 +59,27 @@ export class Lerp{
         return vector.x;
     }
 
-    clampY(y:number){
-        const t = (y - this.P1.y) / (this.P2.y - this.P1.y)
+    getY(x:number){
+        const t = (x - this.P1.x) / (this.P2.x - this.P1.x)
 
         const vector  = this.evaluate(t)
 
         return vector.y;
     }
 
+    clampX(x: number) {
+        const denominator = this.P2.x - this.P1.x;
+        if (denominator === 0) return this.P1.x;// horizontal line
+        return this.evaluate((x - this.P1.x) / denominator).x;
+      }
+      
+    clampY(y: number) {
+    const denominator = this.P2.y - this.P1.y;
+    if (denominator === 0) return this.P1.y;
+    return this.evaluate((y - this.P1.y) / denominator).y;
+    }
+
     getSlope(){
-        return (this.P2.y - this.P1.y)/(this.P2.x - this.P2.x)
+        return (this.P2.y - this.P1.y)/(this.P2.x - this.P1.x)
     }
 }

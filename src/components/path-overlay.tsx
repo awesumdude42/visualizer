@@ -344,10 +344,13 @@ export default function DrawPaths({
             })
             //pose stuff
           }else if(shape.type == "pose"){
-            updatePose(shape.id,{
-              x:Number(shape.coords.x.toFixed(3)),
-              y:Number(shape.coords.y.toFixed(3))
-            })
+            const pose = localPoses.find((pose)=>pose.id == shape.id)
+            if(pose)
+              updatePose(shape.id,{
+                x:Number(shape.coords.x.toFixed(3)),
+                y:Number(shape.coords.y.toFixed(3)),
+                radius:Number(pose.radius.toFixed(3))
+              })
           }
         })
 
@@ -383,10 +386,13 @@ export default function DrawPaths({
             })
             //pose stuff
           }else if(shape.type == "pose"){
-            updatePose(shape.id,{
-              x:Number(shape.coords.x.toFixed(3)),
-              y:Number(shape.coords.y.toFixed(3))
-            })
+            const pose = localPoses.find((pose)=>pose.id == shape.id)
+            if(pose)
+              updatePose(shape.id,{
+                x:Number(shape.coords.x.toFixed(3)),
+                y:Number(shape.coords.y.toFixed(3)),
+                radius:Number(pose.radius.toFixed(3))
+              })
           }
         })
       }
@@ -716,79 +722,135 @@ export default function DrawPaths({
             //this ENTIRE thing is for native control points, i need to make make it for poses
             localPaths.forEach((path)=>{
               //gonna use linear interpolation for this
-              const P1 = path.controlPoints.find((CP)=>CP.id == currentShapeRef.current.id) // finds the CP with the arcpose's id
+              const list:ControlPoint[] = [path.firstPose,...path.controlPoints,path.endPose]
+
+
+              
             
               //alright, now we need to figure out which pose is being moved
-
               shapes.forEach((shape)=>{
+
+                
+
                 if(shape.type == "arc" && shape.id == currentShapeRef.current.id && shape.coords2){
                   
                   //now, the current Arc shouldve been set
-                  if(shape.currentArc == "left" && P1){
+                  if(shape.currentArc == "left"){
                     //now that we know that it the left, we can find P2
-                    const index = path.controlPoints.findIndex((CP)=>P1.id == CP.id)
-                    let P2:ControlPoint;
-                    if(index == 0){
-                      //only if it is the first control point
-                      P2 = path.firstPose;
-                    }else{
-                      //there has to be more than 1 control point because the end points cant be arc poses
-                      const prevCP = path.controlPoints[index - 1]
-                      P2 = prevCP 
-                      
-                      
-                    }
-                    const y = (centerY - mouseY) / scaleY
-                    const lerp = new Lerp(P1,P2,localPoses)
-                    if(is_mouse_in_lerp(mouseX,mouseY,lerp)){
-
-                     
-                      shape.coords = {
-                        x:lerp.getX(y),
-                        y:lerp.clampY(y)
+                    const index = (path.controlPoints.findIndex((CP)=>(CP.isNative ? CP.id : CP.poseId) == shape.id))
+                    const P1 = path.controlPoints[index]
+                    if(P1){
+                      let P2:ControlPoint;
+                      if(index == 0){
+                        //only if it is the first control point
+                        P2 = path.firstPose;
+                      }else{
+                        //there has to be more than 1 control point because the end points cant be arc poses
+                        const prevCP = path.controlPoints[index - 1]
+                        P2 = prevCP 
+                        
+                        
                       }
-
-                      //now we need to update the radius 
+                      const y = (centerY - mouseY) / scaleY
+                      const x = (mouseX - centerX) / scaleX
+                      const lerp = new Lerp(P1,P2,localPoses)
+                      if(is_mouse_in_lerp(mouseX,mouseY,lerp)){
 
                       
-                      const radius = Math.abs(Math.sqrt((lerp.P1.x - shape.coords.x)**2 + (lerp.P1.y - shape.coords.y)**2))
-                      path.controlPoints.forEach((CP)=>{
-                        if(CP.id == currentShapeRef.current.id && CP.nativeParameter && CP.nativeParameter.arcPose){
-                          CP.nativeParameter.radius = radius;
+                        if(Math.abs(lerp.getSlope()) < 1){
+                          shape.coords = {
+                            x:lerp.clampX(x),
+                            y:lerp.getY(x)
+                          }
+                        }else{
+                          shape.coords = {
+                            x:lerp.getX(y),
+                            y:lerp.clampY(y)
+                          }
                         }
-                      })
 
-                    }
-                  }else if(shape.currentArc == "right" && P1){
-                    const index = path.controlPoints.findIndex((CP)=>P1.id == CP.id)
-                    let P2:ControlPoint;
-                    if(index == path.controlPoints.length - 1){
-                      P2 = path.endPose;
-                    }else{
-                      const prevCP = path.controlPoints[index + 1]
-                      P2 = prevCP 
-                      
-                      
-                    }
-                    const y = (centerY - mouseY) / scaleY
-                    const lerp = new Lerp(P1,P2,localPoses)
-                    if(is_mouse_in_lerp(mouseX,mouseY,lerp)){
-                      shape.coords2 = {
-                        x:lerp.getX(y),
-                        y:lerp.clampY(y)
+                        //now we need to update the radius 
+
+                        
+                        const radius = Math.abs(Math.sqrt((lerp.P1.x - shape.coords.x)**2 + (lerp.P1.y - shape.coords.y)**2))
+                        path.controlPoints.forEach((CP)=>{
+                          if(CP.isNative && CP.id == currentShapeRef.current.id && CP.nativeParameter && CP.nativeParameter.arcPose){
+                            CP.nativeParameter.radius = Number(radius.toFixed(3));
+                          }else if(CP.poseId == currentShapeRef.current.id){
+                            const poseIndex = localPoses.findIndex((pose)=>pose.id == CP.poseId)
+                            const pose = localPoses[poseIndex]
+                            if(pose && pose.arcPose){
+                              pose.radius = radius;
+                            }
+                          }
+                        })
+
+                        //now, let's update the arcpose
+                        const spline = new bsplineClass(path,localPoses)
+                        const index = list.findIndex((CP)=>(CP.isNative ? CP.id : CP.poseId) == shape.id)
+                        if(index){
+                          const arcPoses = spline.getArcPoses(index);
+
+                          shape.coords2 = arcPoses[1]
+                        }
                       }
-                      const radius = Math.abs(Math.sqrt((lerp.P1.x - shape.coords2.x)**2 + (lerp.P1.y - shape.coords2.y)**2))
-                      path.controlPoints.forEach((CP)=>{
-                        if(CP.id == currentShapeRef.current.id && CP.nativeParameter && CP.nativeParameter.arcPose){
-                          CP.nativeParameter.radius = radius;
+                    }
+                  }else if(shape.currentArc == "right"){
+
+                    const index = (path.controlPoints.findIndex((CP)=>(CP.isNative ? CP.id : CP.poseId) == shape.id))
+                    const P1 = path.controlPoints[index]
+
+                    if(P1){
+                      let P2:ControlPoint;
+                      if(index == path.controlPoints.length - 1){
+                        P2 = path.endPose;
+                      }else{
+                        const prevCP = path.controlPoints[index + 1]
+                        P2 = prevCP 
+                        
+                        
+                      }
+                      const y = (centerY - mouseY) / scaleY
+                      const x = (mouseX - centerX) / scaleX
+                      const lerp = new Lerp(P1,P2,localPoses)
+                      if(is_mouse_in_lerp(mouseX,mouseY,lerp)){
+                        if(Math.abs(lerp.getSlope()) < 1){
+                          shape.coords2 = {
+                            x:lerp.clampX(x),
+                            y:lerp.getY(x)
+                          }
+                        }else{
+                          shape.coords2 = {
+                            x:lerp.getX(y),
+                            y:lerp.clampY(y)
+                          }
                         }
-                      })
+                        const radius = Math.abs(Math.sqrt((lerp.P1.x - shape.coords2.x)**2 + (lerp.P1.y - shape.coords2.y)**2))
+                        path.controlPoints.forEach((CP)=>{
+                          if(CP.isNative && CP.id == currentShapeRef.current.id && CP.nativeParameter && CP.nativeParameter.arcPose){
+                            CP.nativeParameter.radius = Number(radius.toFixed(3));
+                          }else if(!CP.isNative && CP.poseId == currentShapeRef.current.id){
+                            const poseIndex = localPoses.findIndex((pose)=>pose.id == CP.poseId)
+                            const pose = localPoses[poseIndex]
+                            if(pose && pose.arcPose){
+                              pose.radius = radius;
+                            }
+                          }
+                        })
+
+                        
+                        const spline = new bsplineClass(path,localPoses)
+                        const index = list.findIndex((CP)=>(CP.isNative ? CP.id : CP.poseId)== shape.id)
+                        if(index){
+                          const arcPoses = spline.getArcPoses(index);
+
+                          shape.coords = arcPoses[0]
+                        }
+                      }
                     }
                   }
                 }
-              })
-              
-              
+              }) 
             })
           }
 
@@ -875,6 +937,7 @@ export default function DrawPaths({
           ctx.beginPath();
           ctx.strokeStyle = path.color; 
           ctx.lineWidth = 3;
+          ctx.setLineDash([])
           points.forEach((pt, index) => {
             const cpX = centerX + (pt.x * scaleX);
             const cpY = centerY - (pt.y * scaleY);
@@ -903,6 +966,7 @@ export default function DrawPaths({
           ctx.beginPath();
           ctx.strokeStyle = shape.color;
           ctx.lineWidth = 3;
+          ctx.setLineDash([])
           ctx.arc(x, y, 7, 0, 2 * Math.PI);  
           ctx.stroke(); 
 
@@ -914,12 +978,27 @@ export default function DrawPaths({
           ctx.fill();
         }else if(shape.type == "arc" && shape.coords2){
 
+          
+          let point:Vector = {x:0,y:0};
+          //find control point
+          localPaths.forEach((path)=>{
+            path.controlPoints.forEach((CP)=>{
+              if(CP.isNative && CP.nativeParameter && CP.id == shape.id){
+                point = toPx(CP.nativeParameter.coord);
+              }else if(CP.poseId == shape.id){
+                const pose = localPoses.find((pose)=>pose.id == CP.poseId)
+                point = toPx({x:pose?.x ?? 0, y: pose?.y ?? 0})
+              }
+            })
+
+          })
           //left
           ctx.beginPath();
           const {x:xL,y:yL} = toPx(shape.coords)
           ctx.arc(xL,yL, 5, 0, 2 * Math.PI);  
           ctx.strokeStyle = shape.color;
           ctx.lineWidth = 2;
+          ctx.setLineDash([]);
           ctx.stroke();
 
           //right
@@ -928,7 +1007,23 @@ export default function DrawPaths({
           ctx.arc(xR,yR, 5, 0, 2 * Math.PI);  
           ctx.strokeStyle = shape.color;
           ctx.lineWidth = 2;
+          ctx.setLineDash([]);
           ctx.stroke();
+
+         
+          //only drawing if its the current thing
+          if(currentShapeRef.current.id == shape.id){
+            //can use either xR,xR or xL,yL , gonna go with L
+            const radius = Math.abs(Math.sqrt((point.x - xL)**2 + (point.y - yL)**2))
+
+            ctx.beginPath();
+            ctx.arc(point.x,point.y, radius, 0, 2 * Math.PI);  
+            ctx.strokeStyle = "grey";
+            ctx.setLineDash([radius/5,5])
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
+
         }
       })
 
