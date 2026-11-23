@@ -36,7 +36,7 @@ export default function PlaybackControls() {
 
             */}
 
-            <div className="bg-red-500">
+            <div className="">
                 PROGRESS BAR PLACEHOLDER
             </div>
             <div className="ml-100 flex gap-4">
