@@ -287,12 +287,12 @@ export default function PoseControls ({
                                 value = {pose.radius}
                                 onChange={(e) =>{
                                   
-                                  if (e.target.value !== "") {
-                                    const parsed = parseFloat(e.target.value);
-                                    let final = parsed;
-                                    if (!isNaN(parsed)) final = pose.radius;
-                                    updatePose(pose.id,{radius:final})
-                                  }
+                                  
+                                  const parsed = parseFloat(e.target.value);
+                                  let final = parsed;
+                                  if (  isNaN(parsed)) final = pose.radius;
+                                  updatePose(pose.id,{radius:final})
+                                  
                                 }}
                                 onBlur={(e) => handleInputBlur(e, pose.id, 'radius', 0, 100)} // TODO: Proper limits
                               />
@@ -305,7 +305,7 @@ export default function PoseControls ({
                                 id={`arc-pose-${pose.id}`}
                                 checked={pose.arcPose}
                                 onCheckedChange={(checked: boolean) => {
-                                  updatePose(pose.id, { arcPose: checked, radius: pose.radius == 0 ? 2 : Number(pose.radius.toFixed(3)) });
+                                  updatePose(pose.id, { arcPose: checked, radius: pose.radius < 5  ? 5 : Number(pose.radius.toFixed(3)) });
                                 }}
                               />
                               <label htmlFor={`arc-pose-${pose.id}`} className="text-xs cursor-pointer select-none">

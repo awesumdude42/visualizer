@@ -91,10 +91,10 @@ export default function PathControls({
     }
   }
 
-  function handleNumberInput(e:React.ChangeEvent<HTMLInputElement>){
+  function handleNumberInput(e: React.ChangeEvent<HTMLInputElement>) {
     const parsed = parseFloat(e.target.value)
     let final = parsed;
-    if(isNaN(parsed))final = 0;
+    if (isNaN(parsed)) final = 0;
     return final;
   }
 
@@ -108,62 +108,62 @@ export default function PathControls({
     scrollToSection(`${paths[currentPathIndex].id}`)
 
     // boundaries
-    paths.forEach((path)=>{
-      path.controlPoints.forEach((CP)=>{
-        if(CP.isNative && CP.nativeParameter?.coord){
-          if(CP.nativeParameter.coord.x > 70.75) 
-            updateNativePoint(path.id,CP.id,{coord:{x:70.75,y:CP.nativeParameter.coord.y}})
-          else if(CP.nativeParameter.coord.x < -70.75)
-            updateNativePoint(path.id,CP.id,{coord:{x:-70.75,y:CP.nativeParameter.coord.y}})
+    paths.forEach((path) => {
+      path.controlPoints.forEach((CP) => {
+        if (CP.isNative && CP.nativeParameter?.coord) {
+          if (CP.nativeParameter.coord.x > 70.75)
+            updateNativePoint(path.id, CP.id, { coord: { x: 70.75, y: CP.nativeParameter.coord.y } })
+          else if (CP.nativeParameter.coord.x < -70.75)
+            updateNativePoint(path.id, CP.id, { coord: { x: -70.75, y: CP.nativeParameter.coord.y } })
 
-          if(CP.nativeParameter.coord.y > 70.75) 
-            updateNativePoint(path.id,CP.id,{coord:{y:70.75,x:CP.nativeParameter.coord.x}})
-          else if(CP.nativeParameter.coord.y < -70.75)
-            updateNativePoint(path.id,CP.id,{coord:{y:-70.75,x:CP.nativeParameter.coord.x}})
+          if (CP.nativeParameter.coord.y > 70.75)
+            updateNativePoint(path.id, CP.id, { coord: { y: 70.75, x: CP.nativeParameter.coord.x } })
+          else if (CP.nativeParameter.coord.y < -70.75)
+            updateNativePoint(path.id, CP.id, { coord: { y: -70.75, x: CP.nativeParameter.coord.x } })
         }
       })
-      
-      const FP = path.firstPose;
-      if(FP.isNative && FP.nativeParameter?.coord){
-        if(FP.nativeParameter.coord.x > 70.75) 
-          updateFirstPose(path.id,{coord:{x:70.75,y:FP.nativeParameter.coord.y}})
-        else if(FP.nativeParameter.coord.x < -70.75)
-          updateFirstPose(path.id,{coord:{x:-70.75,y:FP.nativeParameter.coord.y}})
 
-        if(FP.nativeParameter.coord.y > 70.75) 
-          updateFirstPose(path.id,{coord:{y:70.75,x:FP.nativeParameter.coord.x}})
-        else if(FP.nativeParameter.coord.y < -70.75)
-          updateFirstPose(path.id,{coord:{y:-70.75,x:FP.nativeParameter.coord.x}})
+      const FP = path.firstPose;
+      if (FP.isNative && FP.nativeParameter?.coord) {
+        if (FP.nativeParameter.coord.x > 70.75)
+          updateFirstPose(path.id, { coord: { x: 70.75, y: FP.nativeParameter.coord.y } })
+        else if (FP.nativeParameter.coord.x < -70.75)
+          updateFirstPose(path.id, { coord: { x: -70.75, y: FP.nativeParameter.coord.y } })
+
+        if (FP.nativeParameter.coord.y > 70.75)
+          updateFirstPose(path.id, { coord: { y: 70.75, x: FP.nativeParameter.coord.x } })
+        else if (FP.nativeParameter.coord.y < -70.75)
+          updateFirstPose(path.id, { coord: { y: -70.75, x: FP.nativeParameter.coord.x } })
 
       }
 
       const EP = path.endPose;
-      if(EP.isNative && EP.nativeParameter?.coord){
-        if(EP.nativeParameter.coord.x > 70.75) 
-          updateEndPose(path.id,{coord:{x:70.75,y:EP.nativeParameter.coord.y}})
-        else if(EP.nativeParameter.coord.x < -70.75)
-          updateEndPose(path.id,{coord:{x:-70.75,y:EP.nativeParameter.coord.y}})
-        if(EP.nativeParameter.coord.y > 70.75) 
-          updateEndPose(path.id,{coord:{y:70.75,x:EP.nativeParameter.coord.x}})
-        else if(EP.nativeParameter.coord.y < -70.75)
-          updateEndPose(path.id,{coord:{y:-70.75,x:EP.nativeParameter.coord.x}})
+      if (EP.isNative && EP.nativeParameter?.coord) {
+        if (EP.nativeParameter.coord.x > 70.75)
+          updateEndPose(path.id, { coord: { x: 70.75, y: EP.nativeParameter.coord.y } })
+        else if (EP.nativeParameter.coord.x < -70.75)
+          updateEndPose(path.id, { coord: { x: -70.75, y: EP.nativeParameter.coord.y } })
+        if (EP.nativeParameter.coord.y > 70.75)
+          updateEndPose(path.id, { coord: { y: 70.75, x: EP.nativeParameter.coord.x } })
+        else if (EP.nativeParameter.coord.y < -70.75)
+          updateEndPose(path.id, { coord: { y: -70.75, x: EP.nativeParameter.coord.x } })
 
       }
 
       //connected path stuff
 
-      paths.forEach((path,index)=>{
-        if(index != 0){
+      paths.forEach((path, index) => {
+        if (index != 0) {
 
-          const prevPath = paths[index -1]
+          const prevPath = paths[index - 1]
           if (path.firstPose !== prevPath.endPose) updatePath(path.id, { firstPose: prevPath.endPose })
-          
+
         }
       })
     })
 
-    
-  }, [paths, currentPathIndex,updateControlPoint])
+
+  }, [paths, currentPathIndex, updateControlPoint])
 
   return (
     <div className="flex h-full flex-col">
@@ -305,10 +305,10 @@ export default function PathControls({
                                   onValueChange={(newPoints) => updatePath(path.id, { controlPoints: newPoints })}
                                   getItemValue={(item) => item.id}
                                 >
-                                  <Button className="grow ml-3 mr-3 mb-2" onClick={()=>addExternalControlPoint(path.id, path.controlPoints)}>Add External</Button>
+                                  <Button className="grow ml-3 mr-3 mb-2" onClick={() => addExternalControlPoint(path.id, path.controlPoints)}>Add External</Button>
                                   <SortableContent className="flex flex-col gap-2">
 
-                                  
+
                                     <div className="flex flex-row items-center justify-between py-1">
                                       <div className="flex flex-row mt-1">
                                         <div className="mt-1 mr-3">Start:</div>
@@ -319,13 +319,15 @@ export default function PathControls({
                                           max={70.75}
                                           step={0.1}
                                           value={path.firstPose.nativeParameter?.coord.x}
-                                          onChange={(e)=>{
-                                            updateFirstPose(path.id,{coord:{
-                                              x:handleNumberInput(e),
-                                              y:path.firstPose.nativeParameter?.coord.y ?? 0
-                                            }})
+                                          onChange={(e) => {
+                                            updateFirstPose(path.id, {
+                                              coord: {
+                                                x: handleNumberInput(e),
+                                                y: path.firstPose.nativeParameter?.coord.y ?? 0
+                                              }
+                                            })
                                           }}
-                                          onBlur={(e)=>handleInputBlur(e,-70.75,70.75)}
+                                          onBlur={(e) => handleInputBlur(e, -70.75, 70.75)}
                                           className="min-w-20 transition-colors focus-visible:border-red-500 focus-visible:ring-red-500 bg-zinc-900"
                                         />
                                         <div className=" ml-1.5 mr-0.5 mt-1.25">Y:</div>
@@ -334,13 +336,15 @@ export default function PathControls({
                                           min={-70.75}
                                           max={70.75}
                                           value={path.firstPose.nativeParameter?.coord.y}
-                                          onChange={(e)=>{
-                                            updateFirstPose(path.id,{coord:{
-                                              y:handleNumberInput(e),
-                                              x:path.firstPose.nativeParameter?.coord.y ?? 0
-                                            }})
+                                          onChange={(e) => {
+                                            updateFirstPose(path.id, {
+                                              coord: {
+                                                y: handleNumberInput(e),
+                                                x: path.firstPose.nativeParameter?.coord.x ?? 0
+                                              }
+                                            })
                                           }}
-                                          onBlur={(e)=>handleInputBlur(e,-70.75,70.75)}
+                                          onBlur={(e) => handleInputBlur(e, -70.75, 70.75)}
                                           className="min-w-20 transition-colors focus-visible:border-red-500 focus-visible:ring-red-500 bg-zinc-900"
                                         />
                                       </div>
@@ -357,95 +361,99 @@ export default function PathControls({
                                               <CircleMinus className="h-4 w-4 text-brand-primary" color="currentColor" />
                                             </Button>
                                             {!controlPoint.isNative ?
-                                            <Combobox
-                                              items={poses.filter(pose =>
-                                                pose.name !== "" &&
-                                                (pose.id === controlPoint.poseId || path.controlPoints.every(cp => cp.poseId !== pose.id))
-                                              )}
-                                              value={poses.find(p => p.id === controlPoint.poseId)?.name || ""}
-                                              onValueChange={(value) => {
-                                                const selectedPose = poses.find((p) => p.name === value);
-                                                updateControlPoint(path.id, path.controlPoints, controlPoint.id, {
-                                                  poseId: selectedPose ? selectedPose.id : -1
-                                                });
-                                                setReRenderCanvas(false)
-                                              }}
-                                            >
-                                              <ComboboxInput placeholder="Select a Pose" className="flex flex-1 w-full bg-zinc-900" />
-                                              <ComboboxContent>
-                                                <ComboboxEmpty>No poses found</ComboboxEmpty>
-                                                <ComboboxList>
-                                                  {(pose: Pose) => (
-                                                    <ComboboxItem key={pose.id} value={pose.name}>
-                                                      {pose.name}
-                                                    </ComboboxItem>
-                                                  )}
-                                                </ComboboxList>
-                                              </ComboboxContent>
-                                            </Combobox>
-                                            
-                                            :
-                                            <div className="flex flex-row mt-1">
-                                              <DropdownMenu modal={false}>
-                                                <DropdownMenuTrigger className="mr-2 -ml-1 -mt-0.5 bg-transparent hover:bg-transparent p-0 h-auto">
-                                                   <SvgArcPoseIcon className= "size-4 text-[#00cafc]"/>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent>
-                                                  <DropdownMenuGroup>
-                                                    <DropdownMenuCheckboxItem 
-                                                    checked = {controlPoint.nativeParameter?.arcPose}
-                                                    onCheckedChange={(checked)=>{
-                                                      updateNativePoint(path.id,controlPoint.id,{arcPose:checked})
-                                                    }} 
-                                                    onSelect={(e) => e.preventDefault()}>
-                                                      Arc Pose
-                                                    </DropdownMenuCheckboxItem>
-                                                    <DropdownMenuItem 
-                                                    onSelect={(e) => e.preventDefault()}
-                                                    onPointerMove={(e) => e.preventDefault()} 
-                                                    onPointerLeave={(e) => e.preventDefault()}
-                                                    >
-                                                      <Input
-                                                        value={controlPoint.nativeParameter?.radius ?? 0}
-                                                        onChange={(e)=>{
-                                                          
-                                                          updateNativePoint(path.id,controlPoint.id,{radius:handleNumberInput(e)})
+                                              <Combobox
+                                                items={poses.filter(pose =>
+                                                  pose.name !== "" &&
+                                                  (pose.id === controlPoint.poseId || path.controlPoints.every(cp => cp.poseId !== pose.id))
+                                                )}
+                                                value={poses.find(p => p.id === controlPoint.poseId)?.name || ""}
+                                                onValueChange={(value) => {
+                                                  const selectedPose = poses.find((p) => p.name === value);
+                                                  updateControlPoint(path.id, path.controlPoints, controlPoint.id, {
+                                                    poseId: selectedPose ? selectedPose.id : -1
+                                                  });
+                                                  setReRenderCanvas(false)
+                                                }}
+                                              >
+                                                <ComboboxInput placeholder="Select a Pose" className="flex flex-1 w-full bg-zinc-900" />
+                                                <ComboboxContent>
+                                                  <ComboboxEmpty>No poses found</ComboboxEmpty>
+                                                  <ComboboxList>
+                                                    {(pose: Pose) => (
+                                                      <ComboboxItem key={pose.id} value={pose.name}>
+                                                        {pose.name}
+                                                      </ComboboxItem>
+                                                    )}
+                                                  </ComboboxList>
+                                                </ComboboxContent>
+                                              </Combobox>
+
+                                              :
+                                              <div className="flex flex-row mt-1">
+                                                <DropdownMenu modal={false}>
+                                                  <DropdownMenuTrigger className="mr-2 -ml-1 -mt-0.5 bg-transparent hover:bg-transparent p-0 h-auto">
+                                                    <SvgArcPoseIcon className="size-4 text-[#00cafc]" />
+                                                  </DropdownMenuTrigger>
+                                                  <DropdownMenuContent>
+                                                    <DropdownMenuGroup>
+                                                      <DropdownMenuCheckboxItem
+                                                        checked={controlPoint.nativeParameter?.arcPose}
+                                                        onCheckedChange={(checked) => {
+                                                          updateNativePoint(path.id, controlPoint.id, { arcPose: checked })
+
+                                                          if (controlPoint.nativeParameter?.radius == 0) {
+                                                            updateNativePoint(path.id, controlPoint.id, { radius: 5, arcPose: checked })
+                                                          }
                                                         }}
-                                                      />
-                                                    </DropdownMenuItem>
-                                                  </DropdownMenuGroup>
-                                                </DropdownMenuContent>
-                                              </DropdownMenu>
-                                            <div className="mt-1.25 mr-0.5">X:</div>
-                                            <Input
-                                             placeholder="X"
-                                             min={-70.75}
-                                             max={70.75}
-                                             step={0.1}
-                                             value={controlPoint.nativeParameter?.coord.x}
-                                             onChange={(e)=>{
-                                                updateNativePoint(path.id,controlPoint.id,{
-                                                  coord:{x:handleNumberInput(e),y:controlPoint.nativeParameter?.coord.y ?? 0}
-                                                })
-                                             }}
-                                             onBlur={(e)=>handleInputBlur(e,-70.75,70.75)}
-                                             className="min-w-20 transition-colors focus-visible:border-red-500 focus-visible:ring-red-500 bg-zinc-900"
-                                            />
-                                            <div className=" ml-1.5 mr-0.5 mt-1.25">Y:</div>
-                                            <Input
-                                              placeholder="Y"
-                                              min={-70.75}
-                                              max={70.75}
-                                              value={controlPoint.nativeParameter?.coord.y}
-                                              onChange={(e)=>{
-                                                updateNativePoint(path.id,controlPoint.id,{
-                                                  coord:{y:handleNumberInput(e),x:controlPoint.nativeParameter?.coord.x ?? 0}
-                                                })
-                                              }}
-                                              onBlur={(e)=>handleInputBlur(e,-70.75,70.75)}
-                                              className="min-w-20 transition-colors focus-visible:border-red-500 focus-visible:ring-red-500 bg-zinc-900"
-                                            />
-                                            </div>
+                                                        onSelect={(e) => e.preventDefault()}>
+                                                        Arc Pose
+                                                      </DropdownMenuCheckboxItem>
+                                                      <DropdownMenuItem
+                                                        onSelect={(e) => e.preventDefault()}
+                                                        onPointerMove={(e) => e.preventDefault()}
+                                                        onPointerLeave={(e) => e.preventDefault()}
+                                                      >
+                                                        <Input
+                                                          value={controlPoint.nativeParameter?.radius}
+                                                          onChange={(e) => {
+
+                                                            updateNativePoint(path.id, controlPoint.id, { radius: handleNumberInput(e) })
+                                                          }}
+                                                        />
+                                                      </DropdownMenuItem>
+                                                    </DropdownMenuGroup>
+                                                  </DropdownMenuContent>
+                                                </DropdownMenu>
+                                                <div className="mt-1.25 mr-0.5">X:</div>
+                                                <Input
+                                                  placeholder="X"
+                                                  min={-70.75}
+                                                  max={70.75}
+                                                  step={0.1}
+                                                  value={controlPoint.nativeParameter?.coord.x}
+                                                  onChange={(e) => {
+                                                    updateNativePoint(path.id, controlPoint.id, {
+                                                      coord: { x: handleNumberInput(e), y: controlPoint.nativeParameter?.coord.y ?? 0 }
+                                                    })
+                                                  }}
+                                                  onBlur={(e) => handleInputBlur(e, -70.75, 70.75)}
+                                                  className="min-w-20 transition-colors focus-visible:border-red-500 focus-visible:ring-red-500 bg-zinc-900"
+                                                />
+                                                <div className=" ml-1.5 mr-0.5 mt-1.25">Y:</div>
+                                                <Input
+                                                  placeholder="Y"
+                                                  min={-70.75}
+                                                  max={70.75}
+                                                  value={controlPoint.nativeParameter?.coord.y}
+                                                  onChange={(e) => {
+                                                    updateNativePoint(path.id, controlPoint.id, {
+                                                      coord: { y: handleNumberInput(e), x: controlPoint.nativeParameter?.coord.x ?? 0 }
+                                                    })
+                                                  }}
+                                                  onBlur={(e) => handleInputBlur(e, -70.75, 70.75)}
+                                                  className="min-w-20 transition-colors focus-visible:border-red-500 focus-visible:ring-red-500 bg-zinc-900"
+                                                />
+                                              </div>
                                             }
                                           </div>
 
@@ -467,13 +475,15 @@ export default function PathControls({
                                           max={70.75}
                                           step={0.1}
                                           value={path.endPose.nativeParameter?.coord.x}
-                                          onChange={(e)=>{
-                                            updateEndPose(path.id,{coord:{
-                                              x:handleNumberInput(e),
-                                              y:path.endPose.nativeParameter?.coord.y ?? 0
-                                            }})
+                                          onChange={(e) => {
+                                            updateEndPose(path.id, {
+                                              coord: {
+                                                x: handleNumberInput(e),
+                                                y: path.endPose.nativeParameter?.coord.y ?? 0
+                                              }
+                                            })
                                           }}
-                                          onBlur={(e)=>handleInputBlur(e,-70.75,70.75)}
+                                          onBlur={(e) => handleInputBlur(e, -70.75, 70.75)}
                                           className="min-w-20 transition-colors focus-visible:border-red-500 focus-visible:ring-red-500 bg-zinc-900"
                                         />
                                         <div className=" ml-1.5 mr-0.5 mt-1.25">Y:</div>
@@ -482,13 +492,15 @@ export default function PathControls({
                                           min={-70.75}
                                           max={70.75}
                                           value={path.endPose.nativeParameter?.coord.y}
-                                          onChange={(e)=>{
-                                            updateEndPose(path.id,{coord:{
-                                              y:handleNumberInput(e),
-                                              x:path.endPose.nativeParameter?.coord.x ?? 0
-                                            }})
+                                          onChange={(e) => {
+                                            updateEndPose(path.id, {
+                                              coord: {
+                                                y: handleNumberInput(e),
+                                                x: path.endPose.nativeParameter?.coord.x ?? 0
+                                              }
+                                            })
                                           }}
-                                          onBlur={(e)=>handleInputBlur(e,-70.75,70.75)}
+                                          onBlur={(e) => handleInputBlur(e, -70.75, 70.75)}
                                           className="min-w-20 transition-colors focus-visible:border-red-500 focus-visible:ring-red-500 bg-zinc-900"
                                         />
                                       </div>
@@ -598,294 +610,262 @@ export default function PathControls({
                             </AccordionItem>
                           </Accordion>
                         </div>
-                        <div className="flex flex-col">
-                          <div className="grid grid-cols-2 grid-rows-2 pl-3 pr-3 pt-1 pb-2 gap-1">
-
-                            <Button
-                              className={`${path.interpolation.interpolationType == "tangential" ? "bg-brand-primary" : "bg-zinc-900 hover:bg-zinc-700"}`}
-                              onClick={() => updateInterpolation(path.id, { interpolationType: "tangential" })}
-                            >
-                              Tangential
-                            </Button>
-
-                            <Button
-                              className={`${path.interpolation.interpolationType == "constant" ? "bg-brand-primary" : "bg-zinc-900 hover:bg-zinc-700"}`}
-                              onClick={() => updateInterpolation(path.id, { interpolationType: "constant" })}
-                            >
-                              Constant
-                            </Button>
-
-                            <Button
-                              className={`${path.interpolation.interpolationType == "smoothToFinish" ? "bg-brand-primary" : "bg-zinc-900 hover:bg-zinc-700"}`}
-                              onClick={() => updateInterpolation(path.id, { interpolationType: "smoothToFinish" })}
-                            >
-                              Smooth To End
-                            </Button>
-
-                            <Button
-                              className={`${path.interpolation.interpolationType == "nodeBased" ? "bg-brand-primary" : "bg-zinc-900 hover:bg-zinc-700"}`}
-                              onClick={() => updateInterpolation(path.id, { interpolationType: "nodeBased" })}
-                            >
-                              Node Based
-                            </Button>
-                          </div>
-                          <div>
-
-                            <Field className="flex flex-col" hidden={path.interpolation.interpolationType != "tangential"}>
-
-                              <FieldLabel className="ml-3 mt-1.75">Tangent Type:</FieldLabel>
-                              <FieldContent>
-                                <div className="flex justify-center gap-2 ml-3 mr-3 flex-col rounded-lg">
-                                  <Combobox
-                                    items={["forward", "backward", "optimal", "custom"]}
-                                    value={path.interpolation.tangentialParameter?.tangentialType ?? "forward"}
-                                    onValueChange={(value) => {
-                                      if (value)
-                                        updateTangential(path.id, { tangentialType: value })
-
-                                      if (value == "custom" && path.interpolation.tangentialParameter?.customOffset === undefined) {
-                                        updateTangential(path.id, { tangentialType: "custom", customOffset: 0 })
-                                      }
-                                    }}
-                                  >
-                                    <ComboboxInput placeholder="Select a Tangential Type" className="flex flex-1 w-full bg-zinc-900" />
-                                    <ComboboxContent>
-                                      <ComboboxEmpty>No Options found</ComboboxEmpty>
-                                      <ComboboxList>
-                                        {(item) => (
-                                          <ComboboxItem key={item} value={item}>
-                                            {item}
-                                          </ComboboxItem>
-                                        )}
-                                      </ComboboxList>
-                                    </ComboboxContent>
-                                  </Combobox>
-                                  <Input
-                                    hidden={path.interpolation.tangentialParameter?.tangentialType != "custom"}
-                                    type="number"
-                                    className="flex justify-center transition-colors focus-visible:border-brand-primary focus-visible:ring-brand-primary bg-zinc-900"
-                                    min={-180}
-                                    max={180}
-                                    placeholder="Offset Angle"
-                                    value={path.interpolation.tangentialParameter?.customOffset ?? 0}
-                                    onChange={(e) => {
-                                      updateTangential(path.id, { customOffset: handleNumberInput(e)})
-                                    }}
-                                    onBlur={(e) => handleInputBlur(e, -180, 180)}
-                                  />
+                        <div>
+                          <Accordion type="single" defaultValue="" collapsible className="ml-5 mr-3">
+                            <AccordionItem value="item-1">
+                              <AccordionTrigger className="hover:no-underline justify-start gap-2">
+                                <div className="flex w-fit flex-row text-xs gap-2 mr-2">
+                                  Heading Interpolation
                                 </div>
-                              </FieldContent>
-                            </Field>
-                            <div
-                              hidden={path.interpolation.interpolationType != "constant"}
-                              className="flex justify-center ml-3 mr-3 mt-2 flex-col"
-                            >
-                              <Field title="Angle is based on the first or last pose's heading values" className="flex flex-col w-full">
-                                <FieldLabel className="block">
-                                  <div className="block">Constant Angle:</div>
-                                </FieldLabel>
-                                <FieldContent>
-                                  <Combobox
-                                    items={["start", "end"]}
-                                    value={path.interpolation.constantParameter?.constantType ?? "start"}
-                                    onValueChange={(value) => {
-                                      if (value)
-                                        updateInterpolation(path.id, { constantParameter: {
-                                          constantType:value,
-                                          heading:path.interpolation.constantParameter?.heading} 
-                                        })
-                                    }}
-                                  >
-                                    <ComboboxInput placeholder="Select a Constant Type" className="flex flex-1 w-full bg-zinc-900" />
-                                    <ComboboxContent>
-                                      <ComboboxEmpty>No Options found</ComboboxEmpty>
-                                      <ComboboxList>
-                                        {(item) => (
-                                          <ComboboxItem key={item} value={item}>
-                                            {item}
-                                          </ComboboxItem>
-                                        )}
-                                      </ComboboxList>
-                                    </ComboboxContent>
-                                  </Combobox>
-                                </FieldContent>
-                              </Field>
+                              </AccordionTrigger>
+                              <AccordionContent className="h-fit">
+                                <div className="flex flex-col">
+                                  <div className="grid grid-cols-2 grid-rows-2 pl-3 pr-3 pt-1 pb-2 gap-1">
 
-                              <div className="bg-zinc-900 mt-2 rounded-lg">
-                                        {path.controlPoints.length >= 1 && (
-                                          path.interpolation.constantParameter?.constantType == "start" 
-                                            ? 
-                                              !path.controlPoints.at(0)?.isNative
-                                            :
-                                              !path.controlPoints.at(-1)?.isNative
-                                            ) ?
-                                          <div className="flex justify-center h-7 mt-1">
-                                            <p className="mb-px"
-                                            hidden = {path.interpolation.constantParameter?.constantType != "start"}
-                                            >
-                                                Using start pose's heading
-                                            </p>
-                                            <p className="pb-2" hidden = {path.interpolation.constantParameter?.constantType != "end"}
-                                            >
-                                                Using end pose's heading
-                                            </p>
-                                          </div>
-                                        :
-                                          <p className="flex justify-center mt-3" hidden = {
-                                            path.controlPoints.length > 0
-                                          }>
-                                            Add a control point
-                                          </p>
-                                        }
+                                    <Button
+                                      className={`${path.interpolation.interpolationType == "tangential" ? "bg-brand-primary" : "bg-zinc-900 hover:bg-zinc-700"}`}
+                                      onClick={() => updateInterpolation(path.id, { interpolationType: "tangential" })}
+                                    >
+                                      Tangential
+                                    </Button>
+
+                                    <Button
+                                      className={`${path.interpolation.interpolationType == "constant" ? "bg-brand-primary" : "bg-zinc-900 hover:bg-zinc-700"}`}
+                                      onClick={() => updateInterpolation(path.id, { interpolationType: "constant" })}
+                                    >
+                                      Constant
+                                    </Button>
+
+                                    <Button
+                                      className={`${path.interpolation.interpolationType == "smoothToFinish" ? "bg-brand-primary" : "bg-zinc-900 hover:bg-zinc-700"}`}
+                                      onClick={() => updateInterpolation(path.id, { interpolationType: "smoothToFinish" })}
+                                    >
+                                      Smooth To End
+                                    </Button>
+
+                                    <Button
+                                      className={`${path.interpolation.interpolationType == "nodeBased" ? "bg-brand-primary" : "bg-zinc-900 hover:bg-zinc-700"}`}
+                                      onClick={() => updateInterpolation(path.id, { interpolationType: "nodeBased" })}
+                                    >
+                                      Node Based
+                                    </Button>
+                                  </div>
+                                  <div>
+
+                                    <Field className="flex flex-col" hidden={path.interpolation.interpolationType != "tangential"}>
+
+                                      <FieldLabel className="ml-3 mt-1.75">Tangent Type:</FieldLabel>
+                                      <FieldContent>
+                                        <div className="flex justify-center gap-2 ml-3 mr-3 flex-col rounded-lg">
+                                          <Combobox
+                                            items={["forward", "backward", "optimal", "custom"]}
+                                            value={path.interpolation.tangentialParameter?.tangentialType ?? "forward"}
+                                            onValueChange={(value) => {
+                                              if (value)
+                                                updateTangential(path.id, { tangentialType: value })
+
+                                              if (value == "custom" && path.interpolation.tangentialParameter?.customOffset === undefined) {
+                                                updateTangential(path.id, { tangentialType: "custom", customOffset: 0 })
+                                              }
+                                            }}
+                                          >
+                                            <ComboboxInput placeholder="Select a Tangential Type" className="flex flex-1 w-full bg-zinc-900" />
+                                            <ComboboxContent>
+                                              <ComboboxEmpty>No Options found</ComboboxEmpty>
+                                              <ComboboxList>
+                                                {(item) => (
+                                                  <ComboboxItem key={item} value={item}>
+                                                    {item}
+                                                  </ComboboxItem>
+                                                )}
+                                              </ComboboxList>
+                                            </ComboboxContent>
+                                          </Combobox>
+                                          <Input
+                                            hidden={path.interpolation.tangentialParameter?.tangentialType != "custom"}
+                                            type="number"
+                                            className="flex justify-center transition-colors focus-visible:border-brand-primary focus-visible:ring-brand-primary bg-zinc-900"
+                                            min={-180}
+                                            max={180}
+                                            placeholder="Offset Angle"
+                                            value={path.interpolation.tangentialParameter?.customOffset ?? 0}
+                                            onChange={(e) => {
+                                              updateTangential(path.id, { customOffset: handleNumberInput(e) })
+                                            }}
+                                            onBlur={(e) => handleInputBlur(e, -180, 180)}
+                                          />
+                                        </div>
+                                      </FieldContent>
+                                    </Field>
+                                    <div
+                                      hidden={path.interpolation.interpolationType != "constant"}
+                                      className="flex justify-center ml-3 mr-3 mt-2 flex-col"
+                                    >
+                                      <Field title="Angle is based on the first or last pose's heading values" className="flex flex-col w-full">
+                                        <FieldLabel className="block">
+                                          <div className="block">Constant Angle:</div>
+                                        </FieldLabel>
+                                        <FieldContent>
+                                          <Combobox
+                                            items={["start", "end"]}
+                                            value={path.interpolation.constantParameter?.constantType ?? "start"}
+                                            onValueChange={(value) => {
+                                              if (value)
+                                                updateInterpolation(path.id, {
+                                                  constantParameter: {
+                                                    constantType: value,
+                                                    heading: path.interpolation.constantParameter?.heading
+                                                  }
+                                                })
+                                            }}
+                                          >
+                                            <ComboboxInput placeholder="Select a Constant Type" className="flex flex-1 w-full bg-zinc-900" />
+                                            <ComboboxContent>
+                                              <ComboboxEmpty>No Options found</ComboboxEmpty>
+                                              <ComboboxList>
+                                                {(item) => (
+                                                  <ComboboxItem key={item} value={item}>
+                                                    {item}
+                                                  </ComboboxItem>
+                                                )}
+                                              </ComboboxList>
+                                            </ComboboxContent>
+                                          </Combobox>
+                                        </FieldContent>
+                                      </Field>
+
+                                      <div className="bg-zinc-900 mt-2 rounded-lg">
                                         <Input
-                                          hidden = {
-                                            path.interpolation.constantParameter?.constantType == "start" 
-                                            ? 
-                                              !path.controlPoints.at(0)?.isNative
-                                            :
-                                              !path.controlPoints.at(-1)?.isNative
-                                            
-                                          }
-                                          type="number"
                                           className="flex justify-center transition-colors focus-visible:border-brand-primary focus-visible:ring-brand-primary bg-zinc-900"
-                                          min={-180}
-                                          max={180}
                                           placeholder="Constant Angle"
                                           value={path.interpolation.constantParameter?.heading ?? 0}
                                           onChange={(e) => {
-                                            
-                                            updateConstant(path.id,{heading:handleNumberInput(e)})
+
+                                            updateConstant(path.id, { heading: handleNumberInput(e) })
                                           }}
                                           onBlur={(e) => handleInputBlur(e, -180, 180)}
                                         />
-                              </div>
-                            </div>
-                            <div
-                              hidden={path.interpolation.interpolationType != "smoothToFinish"}
-                              className="flexjustify-center ml-3 mr-3 mt-2 rounded-lg gap-1"
-                            >
-                              {path.controlPoints.length > 0 ? (
-                                <div className="flex flex-row gap-1 ">
-                                  <div className="flex-1 bg-zinc-900 border  rounded-lg h-12 flex flex-col justify-center">
-                                    <p hidden={path.controlPoints[0].isNative} className="text-sm pt-3 text-center">
-                                      Using start pose's heading
-                                    </p>
-                                    <Input
-                                      hidden={!path.controlPoints[0].isNative}
-                                      type = "number"
-                                      min={-180}
-                                      max={180}
-                                      className="w-full text-center grow  border-none"
-                                      value={path.interpolation.smoothToEndParameter?.[0] ?? 0}
-                                      onChange={(e)=>{
-                                        
-                                        updateInterpolation(path.id,{smoothToEndParameter:[
-                                          handleNumberInput(e),
-                                          path.interpolation.smoothToEndParameter?.[1] ?? 0
-                                        ]})
-                                      }}
-                                      onBlur={(e)=>handleInputBlur(e,-180,180)}
-                                    />
-                                  </div>
-                                  
-                                  <div className="flex-1 bg-zinc-900 border rounded-lg h-12 flex flex-col justify-center">
-                                    <p hidden={path.controlPoints.at(-1)?.isNative} className="text-sm pt-3 text-center">
-                                      Using end pose's heading
-                                    </p>
-                                    <Input
-                                      hidden={!path.controlPoints.at(-1)?.isNative}
-                                      type = "number"
-                                      min={-180}
-                                      max={180}
-                                      className="w-full text-center grow  border-none"
-                                      value={path.interpolation.smoothToEndParameter?.[1] ?? 0}
-                                      onChange={(e)=>{
-                                        updateInterpolation(path.id,{smoothToEndParameter:[
-                                          path.interpolation.smoothToEndParameter?.[1] ?? 0,
-                                          handleNumberInput(e)
-                                        ]})
-                                      }}
-                                      onBlur={(e)=>handleInputBlur(e,-180,180)}
-                                    />
-                                  </div>
-                                </div>
-                                )
-                                :
-                                <div>
-                                  <p className="bg-zinc-900 p-4 flex justify-center mt-3 rounded-lg" >
-                                    Add a control point
-                                  </p>
-                                </div>
-                              }
-                            </div>
-                            <div hidden={path.interpolation.interpolationType != "nodeBased"} className="bg-zinc-900 rounded-lg mr-3 ml-3">
-                              <Accordion type="single" className="w-full" collapsible >
-                                <AccordionItem value="item-1" className="w-full">
-                                  <div className="flex flex-row">
-                                    <Button
-                                      className="ml-2 mr-1 mt-1 bg-transparent hover:bg-lime-500/25"
-                                      onClick={() => {
-                                        addNode(path.id)
-                                      }}
-                                    >
-                                      <CirclePlus className="h-4 w-4 text-lime-500" color="currentColor" />
-                                    </Button>
-
-                                    <AccordionTrigger className="hover:no-underline">
-                                      <div className="flex w-full grow flex-row text-md items-center -mt-0.5 ml-3 mr-2 ">
-                                        Nodes
                                       </div>
-                                    </AccordionTrigger>
-                                  </div>
-                                  <AccordionContent className="h-fit">
-                                    <div>
-                                      {path.interpolation.nodeBasedParameter?.map((node) => (
-                                        <div key={node.id} className="flex flex-row"> 
-                                          <div className="flex ml-3 pr-1 mt-2 grow gap-1 text-xs flex-row">
-                                            <div className="mt-0.75 flex flex-row gap-3 "><div>{"S"}</div> <div> {" ->"} </div><div className="-ml-2">angle:</div></div>
-                                            <Input
-                                            step={0.1}
-                                            
-                                              type="number"
-                                              className="-mt-1 min-w-10 flex justify-center transition-colors focus-visible:border-brand-primary focus-visible:ring-brand-primary bg-zinc-900"
-                                              min={0}
-                                              max={1}
-                                              value={node.s}
-                                              onChange={(e)=>{
-                                                updateNode(path.id,node.id,{s:handleNumberInput(e)})
-                                              }}
-                                              onBlur={(e)=>handleInputBlur(e,0,1)}
-                                              placeholder="S" />
-                                            <p className="ml-2 mt-0.75">{"->"}</p>
-                                            <Input
-                                              type="number"
-                                              className="-mt-1 min-w-5 mr-2 flex justify-center transition-colors focus-visible:border-brand-primary focus-visible:ring-brand-primary bg-zinc-900"
-                                              min={-180}
-                                              max={180}
-                                              value={node.angle}
-                                              onChange={(e)=>{
-                                                updateNode(path.id,node.id,{angle:handleNumberInput(e)})
-                                              }}
-                                              onBlur={(e)=>handleInputBlur(e,-180,180)}
-                                              placeholder="Angle"/>
-                                          </div>
-                                          <Button
-                                            variant="ghost"
-                                            className="mr-5 -mt-1 bg-transparent hover:bg-transparent p-0 h-auto"
-                                            onClick={() => {
-                                              deleteNode(path.id,node.id)
-                                            }}
-                                          >
-                                            <CircleMinus className="h-4 w-4 text-brand-primary" color="currentColor" />
-                                          </Button>
-                                        </div>
-                                      ))}
                                     </div>
-                                  </AccordionContent>
-                                </AccordionItem>
-                              </Accordion>
-                            </div>
-                          </div>
+                                    <div
+                                      hidden={path.interpolation.interpolationType != "smoothToFinish"}
+                                      className="flexjustify-center ml-3 mr-3 mt-2 rounded-lg gap-1"
+                                    >
+
+                                      <div className="flex flex-row gap-1 ">
+                                        <div className="flex flex-col h-14">
+                                          <div className="mb-1">
+                                            Start:
+                                          </div>
+                                          <Input
+                                            className="w-full text-center grow bg-zinc-900"
+                                            value={path.interpolation.smoothToEndParameter?.[0] ?? 0}
+                                            onChange={(e) => {
+
+                                              updateInterpolation(path.id, {
+                                                smoothToEndParameter: [
+                                                  handleNumberInput(e),
+                                                  path.interpolation.smoothToEndParameter?.[1] ?? 0
+                                                ]
+                                              })
+                                            }}
+                                            onBlur={(e) => handleInputBlur(e, -180, 180)}
+                                          />
+                                        </div>
+                                        <div className="flex flex-col h-14">
+                                          <div className="mb-1">
+                                            End:
+                                          </div>
+                                          <Input
+                                            className="w-full text-center grow bg-zinc-900"
+                                            value={path.interpolation.smoothToEndParameter?.[1] ?? 0}
+                                            onChange={(e) => {
+                                              updateInterpolation(path.id, {
+                                                smoothToEndParameter: [
+                                                  path.interpolation.smoothToEndParameter?.[0] ?? 0,
+                                                  handleNumberInput(e)
+                                                ]
+                                              })
+                                            }}
+                                            onBlur={(e) => handleInputBlur(e, -180, 180)}
+                                          />
+                                        </div>
+                                      </div>
+
+
+                                    </div>
+                                    <div hidden={path.interpolation.interpolationType != "nodeBased"} className="bg-zinc-900 rounded-lg mr-3 ml-3">
+                                      <Accordion type="single" className="w-full" collapsible >
+                                        <AccordionItem value="item-1" className="w-full">
+                                          <div className="flex flex-row">
+                                            <Button
+                                              className="ml-2 mr-1 mt-1 bg-transparent hover:bg-lime-500/25"
+                                              onClick={() => {
+                                                addNode(path.id)
+                                              }}
+                                            >
+                                              <CirclePlus className="h-4 w-4 text-lime-500" color="currentColor" />
+                                            </Button>
+
+                                            <AccordionTrigger className="hover:no-underline">
+                                              <div className="flex w-full grow flex-row text-md items-center -mt-0.5 ml-3 mr-2 ">
+                                                Nodes
+                                              </div>
+                                            </AccordionTrigger>
+                                          </div>
+                                          <AccordionContent className="h-fit">
+                                            <div>
+                                              {path.interpolation.nodeBasedParameter?.map((node) => (
+                                                <div key={node.id} className="flex flex-row">
+                                                  <div className="flex ml-3 pr-1 mt-2 grow gap-1 text-xs flex-row">
+                                                    <div className="mt-0.75 flex flex-row gap-3 "><div>{"S"}</div> <div> {" ->"} </div><div className="-ml-2">angle:</div></div>
+                                                    <Input
+                                                      step={0.1}
+
+                                                      type="number"
+                                                      className="-mt-1 min-w-10 flex justify-center transition-colors focus-visible:border-brand-primary focus-visible:ring-brand-primary bg-zinc-900"
+                                                      min={0}
+                                                      max={1}
+                                                      value={node.s}
+                                                      onChange={(e) => {
+                                                        updateNode(path.id, node.id, { s: handleNumberInput(e) })
+                                                      }}
+                                                      onBlur={(e) => handleInputBlur(e, 0, 1)}
+                                                      placeholder="S" />
+                                                    <p className="ml-2 mt-0.75">{"->"}</p>
+                                                    <Input
+                                                      type="number"
+                                                      className="-mt-1 min-w-5 mr-2 flex justify-center transition-colors focus-visible:border-brand-primary focus-visible:ring-brand-primary bg-zinc-900"
+                                                      min={-180}
+                                                      max={180}
+                                                      value={node.angle}
+                                                      onChange={(e) => {
+                                                        updateNode(path.id, node.id, { angle: handleNumberInput(e) })
+                                                      }}
+                                                      onBlur={(e) => handleInputBlur(e, -180, 180)}
+                                                      placeholder="Angle" />
+                                                  </div>
+                                                  <Button
+                                                    variant="ghost"
+                                                    className="mr-5 -mt-1 bg-transparent hover:bg-transparent p-0 h-auto"
+                                                    onClick={() => {
+                                                      deleteNode(path.id, node.id)
+                                                    }}
+                                                  >
+                                                    <CircleMinus className="h-4 w-4 text-brand-primary" color="currentColor" />
+                                                  </Button>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          </AccordionContent>
+                                        </AccordionItem>
+                                      </Accordion>
+                                    </div>
+                                  </div>
+                                </div>
+                              </AccordionContent>
+                            </AccordionItem>
+                          </Accordion>
                         </div>
                       </AccordionContent>
                     </AccordionItem>
