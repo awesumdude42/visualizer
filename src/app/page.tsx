@@ -104,6 +104,10 @@ export default function Home() {
           updateEndPose={updateEndPose}
           setCurrentShape={setCurrentShape}
           currentShape={currentShape}
+          addNativeControlPoint = {addNativeControlPoint}
+          addPose={addPose}
+          deleteControlPoint = {deleteControlPoint}
+          
           />
         </ResizablePanel>
         <ResizableHandle withHandle />

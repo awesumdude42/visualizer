@@ -4,15 +4,15 @@ import { create } from 'zustand'
 export const Poses = () => {
   const [poses, setPoses] = useState<Pose[]>([]);
 
-  const addPose = () => {
+  const addPose = (x?:number,y?:number) => {
     setPoses((prevPoses) => {
       const nextNumber = prevPoses.length + 1;
 
       const newPose: Pose = {
         id: Date.now(),
         name: `pose${nextNumber}`,
-        x: 0,
-        y: 0,
+        x: x ?? 0,
+        y: y ?? 0,
         heading: 0,
         radius: 0,
         arcPose: false,
@@ -167,7 +167,7 @@ export const Paths = () => {
     });
   };
 
-  const addNativeControlPoint = (pathId:number)=>{
+  const addNativeControlPoint = (pathId:number,x?:number,y?:number)=>{
     const path = paths.find((p)=>p.id==pathId)
     const controlPoints = path?.controlPoints
 
@@ -178,7 +178,7 @@ export const Paths = () => {
       isNative:true,
       nativeParameter:{
         id:Date.now(), // id might be useless lowk
-        coord:{x:0,y:0},
+        coord:{x:x ?? 0,y: y ?? 0},
         arcPose:false,
         radius:0
       }

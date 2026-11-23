@@ -1,9 +1,20 @@
-import {Copy, Grid2X2, MousePointer, RulerDimensionLine} from "lucide-react";
+import { Copy, Grid2X2, MousePointer, RulerDimensionLine } from "lucide-react";
 import { Button } from "./ui/button";
 import { Angle } from 'lucide-react';
+import { useState } from "react";
+import { Progress } from "./ui/progress";
 
-export default function PlaybackControls(){
-    return(
+
+export default function PlaybackControls() {
+
+
+    //keeping state here for now
+    const [value, setValue] = useState(100)
+
+
+
+
+    return (
 
         <div className=" flex flex-row rounded-lg border min-h-15 items-center grow justify-center">
             {/* I think the strat is to use a shadcn progress and use zustand to convey t to it
@@ -24,32 +35,29 @@ export default function PlaybackControls(){
 
 
             */}
-            <div className="flex">
-                PLAYBACK BAR & FIELD OPTIONS PLACEHOLDER
+
+            <div className="bg-red-500">
+                PROGRESS BAR PLACEHOLDER
             </div>
             <div className="ml-100 flex gap-4">
                 <Button className="w-10 h-10 border-2 rounded-md" variant={"outline"}>
-                    
-                   <RulerDimensionLine  color = "#C00000"/>
+
+                    <RulerDimensionLine color="#C00000" />
                 </Button>
 
                 <Button className="w-10 h-10 border-2 rounded-md" variant={"outline"}>
-                    <Angle  color = "#C00000"/>
+                    <Angle color="#C00000" />
                 </Button>
 
                 <Button className="w-10 h-10 border-2 rounded-md" variant={"outline"}>
-                    <Grid2X2  color = "#C00000"/>
+                    <Grid2X2 color="#C00000" />
                 </Button>
 
                 <Button className="w-10 h-10 border-2 rounded-md" variant={"outline"}>
-                    <Copy  color = "#C00000" className="-mr-0.5"/>
-                    <MousePointer color = "#C00000" className="-ml-3 mt-3"/>
-                    
+                    <Copy color="#C00000" className="-mr-0.5" />
+                    <MousePointer color="#C00000" className="-ml-3 mt-3" />
+
                 </Button>
-
-                <div>
-
-                </div>
 
             </div>
         </div>

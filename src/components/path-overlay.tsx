@@ -22,6 +22,9 @@ interface PathDrawProps {
   updateEndPose: (pathId: number, updatedFields: Partial<NativeControlPoint>) => void
   currentShape: Shape
   setCurrentShape: Dispatch<SetStateAction<Shape>>
+  addNativeControlPoint: (pathId: number, x?: number, y?: number) => void
+  addPose: (x?: number, y?: number) => void
+  deleteControlPoint: (pathId: number, currentPoints: ControlPoint[], controlPointId: number) => void
 }
 
 export default function DrawPaths({
@@ -30,13 +33,18 @@ export default function DrawPaths({
   updatePose,
   reRender,
   setCurrentPathIndex,
+  currentPathIndex,
   updateControlPoint,
   updateNativePoint,
   updatePath,
   updateFirstPose,
   updateEndPose,
   currentShape,
-  setCurrentShape
+  setCurrentShape,
+  addNativeControlPoint,
+  addPose,
+  deleteControlPoint,
+  deletePose
 }: PathDrawProps) {
 
 
@@ -79,7 +87,6 @@ export default function DrawPaths({
   function toPx(p: Vector) {
     return { x: centerX + p.x * scaleX, y: centerY - p.y * scaleY }
   }
-
 
 
 
@@ -177,14 +184,6 @@ export default function DrawPaths({
 
 
 
-
-
-
-
-
-
-
-
     //drag and drop checker
     let is_mouse_in_shape = (x: number, y: number, shape: Shape) => {
       let tolerance = 10;
@@ -223,6 +222,45 @@ export default function DrawPaths({
     }
 
 
+
+
+    let on_key_press = (event: KeyboardEvent) => {
+
+      if (!event.repeat)
+        if (event.key.toLowerCase() == "a" && currentPathIndex >= 0) {
+          addNativeControlPoint(localPaths[currentPathIndex].id)
+        } else if (event.key.toLowerCase() == "s") {
+          addPose();
+        }
+    }
+    let on_double_click = (event: MouseEvent) => {
+      event.preventDefault();
+      let mouseX = event.clientX - rect.left;
+      let mouseY = event.clientY - rect.top;
+      const x = (mouseX - centerX) / scaleX;
+      const y = (centerY - mouseY) / scaleY;
+      let deleted = false;
+      for (const shape of shapes) {
+        if (is_mouse_in_shape(mouseX, mouseY, shape) && shape.type === "native") {
+          if (currentPathIndex >= 0 && localPaths[currentPathIndex]) {
+            deleteControlPoint(
+              localPaths[currentPathIndex].id, 
+              localPaths[currentPathIndex].controlPoints, 
+              shape.id
+            );
+            deleted = true;
+            break; 
+          }
+        }else if (is_mouse_in_shape(mouseX, mouseY, shape) && shape.type === "pose"){
+          deletePose(shape.id);
+          deleted = true;
+          break; 
+        }
+      }
+      if (!deleted && currentPathIndex >= 0 && localPaths.length > 0) {
+        addNativeControlPoint(localPaths[currentPathIndex].id, x, y);
+      }
+    };
 
     let is_mouse_in_lerp = (x: number, y: number, lerp: Lerp) => {
 
@@ -867,15 +905,15 @@ export default function DrawPaths({
                         }
                       }
 
-                      
-                      
-                      
-              
+
+
+
+
                       let radius = Math.abs(Math.sqrt((lerp.P1.x - shape.coords.x) ** 2 + (lerp.P1.y - shape.coords.y) ** 2))
 
-                      
-                      
-                      
+
+
+
                       if (radius >= lerp.getDistance()) radius = lerp.getDistance();
                       path.controlPoints.forEach((CP) => {
                         if (CP.isNative && CP.id == currentShapeRef.current.id && CP.nativeParameter && CP.nativeParameter.arcPose) {
@@ -905,8 +943,8 @@ export default function DrawPaths({
 
                       //now, these will be the same bc of how i wrote the code(theoretically, if im not a dumbass)
 
-                      
-                      radius = Math.min(radius,radiusR)
+
+                      radius = Math.min(radius, radiusR)
 
                       if (radius >= lerp.getDistance()) radius = lerp.getDistance();
                       path.controlPoints.forEach((CP) => {
@@ -976,8 +1014,8 @@ export default function DrawPaths({
 
                       let radiusL = Math.abs(Math.sqrt((lerp.P1.x - shape.coords.x) ** 2 + (lerp.P1.y - shape.coords.y) ** 2))
 
-                      
-                      radius = Math.min(radius,radiusL)
+
+                      radius = Math.min(radius, radiusL)
 
                       if (radius >= lerp.getDistance()) radius = lerp.getDistance();
                       path.controlPoints.forEach((CP) => {
@@ -1038,11 +1076,30 @@ export default function DrawPaths({
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    
+
     canvas.onmousedown = mouse_down;
     canvas.onmouseup = mouse_up;
     canvas.onmouseout = mouse_out;
     canvas.onmousemove = mouse_move;
+    window.addEventListener("keydown", on_key_press)
+    canvas.addEventListener("dblclick", on_double_click)
+    canvas.addEventListener("contextmenu", (event) => {
+
+      event.stopPropagation();
+
+
+
+      let mouseX = event.clientX - rect.left;
+      let mouseY = event.clientY - rect.top;
+
+      const x = (mouseX - centerX) / scaleX;
+      const y = (centerY - mouseY) / scaleY;
+
+
+
+
+      console.log(`Context Menu Opened on Canvas at (${x.toFixed(3)},${y.toFixed(3)})`)
+    })
 
 
     ctx.scale(dpr, dpr)
@@ -1158,18 +1215,18 @@ export default function DrawPaths({
           ctx.lineWidth = 2;
           ctx.setLineDash([]);
           ctx.stroke();
-          
 
-          
+
+
           const radiusL = Math.abs(Math.sqrt((point.x - xL) ** 2 + (point.y - yL) ** 2))
           const radiusR = Math.abs(Math.sqrt((point.x - xR) ** 2 + (point.y - yR) ** 2))
 
-          
+
           const radius = Math.min(radiusL, radiusR)
 
-          
 
-          
+
+
 
           ctx.beginPath();
           ctx.arc(point.x, point.y, radius, 0, 2 * Math.PI);
@@ -1288,32 +1345,41 @@ export default function DrawPaths({
 
 
 
+    return () => {
+      window.removeEventListener('keydown', on_key_press);
+      canvas.removeEventListener("dblclick", on_double_click);
+    }
+
 
   }, [poses, paths, imageLoaded, reRender]);
 
 
   return (
-    <div className="flex h-full w-full items-center justify-center overflow-hidden min-h-0 min-w-0 p-2">
-      <div className="relative flex items-center justify-center w-full h-full max-w-full max-h-full min-h-0 min-w-0">
-        <div className="relative flex items-center justify-center aspect-square max-w-full max-h-full w-full h-full">
-          <img
-            ref={imageRef}
-            src={image}
-            className="w-full h-full object-contain select-none pointer-events-none"
-            alt="Field"
-            draggable="false"
-            id="field"
-            unselectable="on"
-            onLoad={() => setImageLoaded(true)}
-          />
+    <div className="flex h-full w-full items-center justify-center overflow-hidden min-h-0 min-w-0">
 
-          <canvas
-            ref={canvasRef}
-            id="field-canvas"
-            className="absolute inset-0 w-full h-full pointer-events-none"
-          />
-        </div>
+      <div
+        className="relative flex flex-col max-h-full max-w-full min-h-0 min-w-0 items-center justify-center"
+        style={{ maxWidth: '675px', maxHeight: '675px' }}
+      >
+
+        <img
+          ref={imageRef}
+          src={image}
+          className="block aspect-square max-h-full max-w-full w-auto h-auto object-contain select-none pointer-events-none"
+          alt="Field"
+          draggable="false"
+          id="field"
+          unselectable="on"
+          onLoad={() => setImageLoaded(true)}
+        />
+
+        <canvas
+          ref={canvasRef}
+          id="field-canvas"
+          className="absolute inset-0 w-full h-full "
+        />
       </div>
+
     </div>
   );
 }
