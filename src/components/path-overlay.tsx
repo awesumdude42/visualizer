@@ -976,7 +976,7 @@ export default function DrawPaths({
 
                       let radiusL = Math.abs(Math.sqrt((lerp.P1.x - shape.coords.x) ** 2 + (lerp.P1.y - shape.coords.y) ** 2))
 
-                     
+                      
                       radius = Math.min(radius,radiusL)
 
                       if (radius >= lerp.getDistance()) radius = lerp.getDistance();
@@ -1169,6 +1169,8 @@ export default function DrawPaths({
 
           
 
+          
+
           ctx.beginPath();
           ctx.arc(point.x, point.y, radius, 0, 2 * Math.PI);
           ctx.strokeStyle = `rgba(128,128,128,${currentShapeRef.current.id == shape.id ? "1" : "0.3"}`
@@ -1191,9 +1193,6 @@ export default function DrawPaths({
             shapes.forEach((shape) => {
               if (currentShapeRef.current.id == shape.id && (shape.type == "native" || shape.type == "pose")) {
                 ctx.beginPath();
-                //shape is the arc pose
-                // currentShapeRef.current.id is the created arc poses
-
 
 
                 if (currentShapeRef.current.currentArc == "left") {
@@ -1294,30 +1293,26 @@ export default function DrawPaths({
 
 
   return (
+    <div className="flex h-full w-full items-center justify-center overflow-hidden min-h-0 min-w-0 p-2">
+      <div className="relative flex items-center justify-center w-full h-full max-w-full max-h-full min-h-0 min-w-0">
+        <div className="relative flex items-center justify-center aspect-square max-w-full max-h-full w-full h-full">
+          <img
+            ref={imageRef}
+            src={image}
+            className="w-full h-full object-contain select-none pointer-events-none"
+            alt="Field"
+            draggable="false"
+            id="field"
+            unselectable="on"
+            onLoad={() => setImageLoaded(true)}
+          />
 
-    <div className="flex h-full w-full items-center justify-center overflow-hidden min-h-0 min-w-0">
-
-      <div
-        className="relative flex flex-col max-h-full max-w-full min-h-0 min-w-0 items-center justify-center"
-        style={{ maxWidth: '735px', maxHeight: '735px' }}
-      >
-
-        <img
-          ref={imageRef}
-          src={image}
-          className="block aspect-square max-h-full max-w-full w-auto h-auto object-contain select-none pointer-events-none"
-          alt="Field"
-          draggable="false"
-          id="field"
-          unselectable="on"
-          onLoad={() => setImageLoaded(true)}
-        />
-
-        <canvas
-          ref={canvasRef}
-          id="field-canvas"
-          className="absolute inset-0 w-full h-full "
-        />
+          <canvas
+            ref={canvasRef}
+            id="field-canvas"
+            className="absolute inset-0 w-full h-full pointer-events-none"
+          />
+        </div>
       </div>
     </div>
   );

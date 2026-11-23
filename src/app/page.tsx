@@ -6,6 +6,7 @@ import { Paths, Poses, ReRender, Settings } from "@/hooks/use-visualizer";
 import PoseControls from "@/components/pose-controls";
 import DrawPaths from "@/components/path-overlay";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import PlaybackControls from "@/components/playback-controls";
 
 
 export default function Home() {
@@ -141,7 +142,7 @@ export default function Home() {
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>
-
+      <PlaybackControls/>
     </div>
   );
 }
