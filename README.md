@@ -2,7 +2,9 @@
 
 welcome to the Apex Pathing Visualizer!
 
-**This visualizer is for Apex Pathing, a Pathing software for the First Tech Challenge. The visualizer is currently in development.**
+This visualizer is for Apex Pathing, a Pathing software for the First Tech Challenge. **The visualizer is currently in development.**
+
+The visualizer was made to aid users of Apex Pathing in creating paths for the autonomous period. The framework used is Next.js, it is coded in React Typescript, and shadcn is used for basically all of the UI components.
 
 
 # Links
@@ -12,6 +14,7 @@ There are two visualizer links, the main/stable version, and the development lin
 The development link is for dev purposes and features on it might not be pushed to main version
 
 Main deployment: https://visualizer.apexpathing.com/
+
 Dev deployment:  https://visualizer-one-drab.vercel.app/
 
 ## Currently implemented features
