@@ -2,7 +2,7 @@
 
 welcome to the Apex Pathing Visualizer!
 
-This visualizer is for Apex Pathing, a Pathing software for the First Tech Challenge. The visualizer is currently in development.
+**This visualizer is for Apex Pathing, a Pathing software for the First Tech Challenge. The visualizer is currently in development.**
 
 
 # Links
@@ -12,7 +12,7 @@ There are two visualizer links, the main/stable version, and the development lin
 The development link is for dev purposes and features on it might not be pushed to main version
 
 Main deployment: https://visualizer.apexpathing.com/
-Dev deplotment:  https://visualizer-one-drab.vercel.app/
+Dev deployment:  https://visualizer-one-drab.vercel.app/
 
 ## Currently implemented features
 * Adding poses to the field
